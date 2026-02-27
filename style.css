@@ -1,0 +1,31 @@
+body {
+    background-color: #f0f4f8; /* Calm blue-grey */
+    font-family: 'Segoe UI', sans-serif;
+    text-align: center;
+    color: #2d3748;
+}
+
+header {
+    padding: 50px;
+    background: #2b6cb0;
+    color: white;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    margin: 20px auto;
+    width: 60%;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+button {
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    background: #48bb78; /* Encouraging green */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
