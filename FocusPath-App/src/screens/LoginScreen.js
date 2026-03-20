@@ -77,7 +77,10 @@ export default function LoginScreen({ navigation }) {
             placeholderTextColor={Colors.textMuted}
             value={password}
             onChangeText={setPassword}
-            secureTextEntry
+            secureTextEntry={true}
+            textContentType="none"
+            autoComplete="off"
+            autoCorrect={false}
           />
 
           <TouchableOpacity style={styles.btnPrimary} onPress={handleLogin}>

@@ -100,7 +100,10 @@ export default function SignupScreen({ navigation }) {
             placeholderTextColor={Colors.textMuted}
             value={password}
             onChangeText={setPassword}
-            secureTextEntry
+            secureTextEntry={true}
+            textContentType="none"
+            autoComplete="off"
+            autoCorrect={false}
           />
 
           <Text style={styles.label}>Confirm Password</Text>
@@ -110,7 +113,10 @@ export default function SignupScreen({ navigation }) {
             placeholderTextColor={Colors.textMuted}
             value={confirm}
             onChangeText={setConfirm}
-            secureTextEntry
+            secureTextEntry={true}
+            textContentType="none"
+            autoComplete="off"
+            autoCorrect={false}
           />
 
           <TouchableOpacity style={styles.btnPrimary} onPress={handleSignup}>
