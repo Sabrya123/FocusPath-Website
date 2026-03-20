@@ -4,262 +4,119 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
-    <title>The Focus Path — Quit Vaping</title>
+    <title>Unclouded — Quit Vaping For Good</title>
 </head>
 <body>
 
-<!-- ==================== LOGIN / SIGNUP PAGE ==================== -->
-<div id="page-auth" class="page active">
-    <div class="auth-container">
-        <div class="auth-logo">
-            <div class="logo-icon">🌿</div>
-            <h1>The Focus Path</h1>
-            <p class="tagline">Your journey to freedom starts here</p>
+<!-- Nav -->
+<nav class="nav">
+    <div class="nav-inner">
+        <div class="nav-brand">
+            <span class="nav-name">Unclouded</span>
         </div>
-
-        <!-- Login Form -->
-        <form id="form-login" class="auth-form">
-            <h2>Welcome Back</h2>
-            <div class="input-group">
-                <label for="login-email">Email</label>
-                <input type="email" id="login-email" placeholder="you@example.com" required>
-            </div>
-            <div class="input-group">
-                <label for="login-password">Password</label>
-                <input type="password" id="login-password" placeholder="Your password" required>
-            </div>
-            <button type="submit" class="btn-primary">Log In</button>
-            <p class="auth-switch">Don't have an account? <a href="#" id="show-signup">Sign up</a></p>
-            <p id="login-error" class="error-msg"></p>
-        </form>
-
-        <!-- Signup Form -->
-        <form id="form-signup" class="auth-form hidden">
-            <h2>Create Account</h2>
-            <div class="input-group">
-                <label for="signup-name">Full Name</label>
-                <input type="text" id="signup-name" placeholder="Your name" required>
-            </div>
-            <div class="input-group">
-                <label for="signup-email">Email</label>
-                <input type="email" id="signup-email" placeholder="you@example.com" required>
-            </div>
-            <div class="input-group">
-                <label for="signup-password">Password</label>
-                <input type="password" id="signup-password" placeholder="Create a password (6+ chars)" required minlength="6">
-            </div>
-            <div class="input-group">
-                <label for="signup-confirm">Confirm Password</label>
-                <input type="password" id="signup-confirm" placeholder="Confirm password" required minlength="6">
-            </div>
-            <button type="submit" class="btn-primary">Sign Up</button>
-            <p class="auth-switch">Already have an account? <a href="#" id="show-login">Log in</a></p>
-            <p id="signup-error" class="error-msg"></p>
-        </form>
+        <a href="#pricing" class="nav-cta">Get the App</a>
     </div>
-</div>
+</nav>
 
-<!-- ==================== IDENTITY / GOAL PAGE ==================== -->
-<div id="page-identity" class="page">
-    <div class="identity-container">
-        <div class="identity-header">
-            <h1>Who Do You Want to Be?</h1>
-            <p>Tell us about the person you're becoming. This helps us personalise your journey.</p>
-        </div>
-
-        <form id="form-identity">
-            <div class="input-group">
-                <label for="identity-who">Who do you want to become?</label>
-                <textarea id="identity-who" rows="3" placeholder="e.g. A healthier, more disciplined version of myself who is in control..." required></textarea>
-            </div>
-
-            <div class="input-group">
-                <label>What motivates you to quit?</label>
-                <div class="checkbox-group">
-                    <label class="checkbox-label">
-                        <input type="checkbox" name="motivation" value="health"> Better health
-                    </label>
-                    <label class="checkbox-label">
-                        <input type="checkbox" name="motivation" value="money"> Save money
-                    </label>
-                    <label class="checkbox-label">
-                        <input type="checkbox" name="motivation" value="family"> Family & loved ones
-                    </label>
-                    <label class="checkbox-label">
-                        <input type="checkbox" name="motivation" value="fitness"> Fitness & athletics
-                    </label>
-                    <label class="checkbox-label">
-                        <input type="checkbox" name="motivation" value="allah"> Get closer to Allah
-                    </label>
-                    <label class="checkbox-label">
-                        <input type="checkbox" name="motivation" value="control"> Self-control & discipline
-                    </label>
-                </div>
-            </div>
-
-            <div class="input-group">
-                <label for="identity-years">How long have you been vaping?</label>
-                <select id="identity-years" required>
-                    <option value="">Select...</option>
-                    <option value="<1">Less than 1 year</option>
-                    <option value="1-2">1-2 years</option>
-                    <option value="2-3">2-3 years</option>
-                    <option value="3+">3+ years</option>
-                </select>
-            </div>
-
-            <div class="input-group">
-                <label for="identity-quit-date">When did you quit (or when do you want to start)?</label>
-                <input type="date" id="identity-quit-date" required>
-            </div>
-
-            <button type="submit" class="btn-primary btn-large">Begin My Journey</button>
-        </form>
+<!-- Hero -->
+<section class="hero">
+    <div class="hero-inner">
+        <h1>Quit Vaping.<br>Reclaim Your Life.</h1>
+        <p class="hero-sub">Unclouded is your personal quit-vaping companion. Daily motivation, emergency craving support, breathing exercises, and a streak tracker that keeps you accountable — all in one app.</p>
+        <a href="#pricing" class="btn-hero">Start Your Journey — $10/month</a>
     </div>
-</div>
+</section>
 
-<!-- ==================== MAIN DASHBOARD ==================== -->
-<div id="page-dashboard" class="page">
-    <!-- Top Nav -->
-    <nav class="top-nav">
-        <div class="nav-left">
-            <span class="nav-logo">🌿</span>
-            <span class="nav-title">The Focus Path</span>
-        </div>
-        <div class="nav-right">
-            <span id="nav-username"></span>
-            <button id="btn-logout" class="btn-small">Log Out</button>
-        </div>
-    </nav>
-
-    <main class="dashboard">
-        <!-- Streak Section -->
-        <section class="streak-section">
-            <div class="streak-card">
-                <div class="streak-ring" id="streak-ring">
-                    <svg viewBox="0 0 200 200">
-                        <circle class="ring-bg" cx="100" cy="100" r="90" />
-                        <circle class="ring-fill" cx="100" cy="100" r="90" id="ring-fill" />
-                    </svg>
-                    <div class="streak-number" id="streak-days">0</div>
-                </div>
-                <div class="streak-info">
-                    <h2 id="streak-label">Days Vape-Free</h2>
-                    <p id="streak-detail"></p>
-                    <div class="streak-stats">
-                        <div class="stat">
-                            <span class="stat-value" id="stat-hours">0</span>
-                            <span class="stat-label">Hours</span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-value" id="stat-days">0</span>
-                            <span class="stat-label">Days</span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-value" id="stat-weeks">0</span>
-                            <span class="stat-label">Weeks</span>
-                        </div>
-                    </div>
-                </div>
+<!-- Features -->
+<section class="features" id="features">
+    <div class="features-inner">
+        <h2>Everything You Need to Stay Free</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <h3>Streak Tracker</h3>
+                <p>Watch your vape-free days grow with a visual progress ring. Hours, days, and weeks — all tracked.</p>
             </div>
-        </section>
-
-        <!-- Emergency Button -->
-        <section class="emergency-section">
-            <button id="btn-emergency" class="btn-emergency" onclick="openEmergency()">
-                <span class="emergency-icon">🆘</span>
-                <span>I Want to Vape — HELP</span>
-            </button>
-        </section>
-
-        <!-- Daily Facts -->
-        <section class="facts-section">
-            <div class="fact-card fact-negative">
-                <div class="fact-icon">⚠️</div>
-                <h3>Daily Vaping Fact</h3>
-                <p id="fact-negative-text"></p>
+            <div class="feature-card">
+                <h3>Emergency Help</h3>
+                <p>About to break? Hit the emergency button for instant positive reinforcements and a guided 2-minute breathing exercise.</p>
             </div>
-            <div class="fact-card fact-positive">
-                <div class="fact-icon">✅</div>
-                <h3>Daily Quitting Win</h3>
-                <p id="fact-positive-text"></p>
+            <div class="feature-card">
+                <h3>Daily Facts</h3>
+                <p>One daily fact about vaping's harm and one about the benefits of quitting. Knowledge is power.</p>
             </div>
-        </section>
-
-        <!-- Allah Reminder (conditionally shown) -->
-        <section id="allah-section" class="allah-section hidden">
-            <div class="allah-card">
-                <div class="allah-icon">🕌</div>
-                <h3>Daily Reminder</h3>
-                <p id="allah-reminder-text"></p>
+            <div class="feature-card">
+                <h3>Faith-Based Support</h3>
+                <p>If your goal is to get closer to Allah, the app provides daily Islamic reminders and Quran-based encouragement.</p>
             </div>
-        </section>
-
-        <!-- Timeline -->
-        <section class="timeline-section">
-            <h2>Your Recovery Timeline</h2>
-            <p class="timeline-subtitle">Here's what happens when you stop vaping</p>
-            <div class="timeline" id="timeline"></div>
-        </section>
-
-        <!-- Identity Reminder -->
-        <section class="identity-reminder-section">
-            <div class="identity-reminder-card">
-                <h3>Remember Who You're Becoming</h3>
-                <p id="identity-reminder-text"></p>
+            <div class="feature-card">
+                <h3>Recovery Timeline</h3>
+                <p>See exactly what happens to your body when you quit — from the hardest days to the victory milestones.</p>
             </div>
-        </section>
-    </main>
-</div>
-
-<!-- ==================== EMERGENCY MODAL ==================== -->
-<div id="emergency-modal" class="modal hidden">
-    <div class="modal-overlay" onclick="closeEmergency()"></div>
-    <div class="modal-content">
-        <button class="modal-close" onclick="closeEmergency()">&times;</button>
-
-        <!-- Phase 1: Reinforcement -->
-        <div id="emergency-phase-1" class="emergency-phase">
-            <div class="emergency-header">
-                <h2>You're Stronger Than This</h2>
-            </div>
-            <div class="reinforcement-messages">
-                <p id="reinforcement-1" class="reinforcement-msg"></p>
-                <p id="reinforcement-2" class="reinforcement-msg"></p>
-                <p id="reinforcement-3" class="reinforcement-msg"></p>
-            </div>
-            <div id="emergency-allah-msg" class="allah-emergency hidden">
-                <p id="emergency-allah-text"></p>
-            </div>
-            <button class="btn-primary btn-large" onclick="startBreathing()">Start 2-Min Breathing Exercise</button>
-            <button class="btn-secondary" onclick="closeEmergency()">I'm Feeling Better</button>
-        </div>
-
-        <!-- Phase 2: Breathing Exercise -->
-        <div id="emergency-phase-2" class="emergency-phase hidden">
-            <h2>Breathe With Me</h2>
-            <p class="breathing-subtitle">Follow the circle. 2 minutes to calm.</p>
-            <div class="breathing-circle-container">
-                <div id="breathing-circle" class="breathing-circle">
-                    <span id="breathing-text">Ready</span>
-                </div>
-            </div>
-            <p id="breathing-timer" class="breathing-timer">2:00</p>
-            <button class="btn-secondary" onclick="closeEmergency()">End Early</button>
-        </div>
-
-        <!-- Phase 3: Complete -->
-        <div id="emergency-phase-3" class="emergency-phase hidden">
-            <div class="complete-celebration">
-                <div class="complete-icon">💪</div>
-                <h2>You Made It!</h2>
-                <p>The craving has passed. You are in control. Every moment you resist makes you stronger.</p>
-                <p id="complete-allah-msg" class="hidden"></p>
-                <button class="btn-primary btn-large" onclick="closeEmergency()">Back to Dashboard</button>
+            <div class="feature-card">
+                <h3>Identity & Goals</h3>
+                <p>Define who you want to become. The app reminds you of your vision every single day.</p>
             </div>
         </div>
     </div>
-</div>
+</section>
+
+<!-- How It Works -->
+<section class="how-it-works">
+    <div class="how-inner">
+        <h2>How It Works</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="step-num">1</div>
+                <h3>Subscribe</h3>
+                <p>Start your $10/month subscription and download the app.</p>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <h3>Set Your Identity</h3>
+                <p>Tell us who you want to become and what motivates you to quit.</p>
+            </div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <h3>Stay Accountable</h3>
+                <p>Track your streak, use emergency help when cravings hit, and grow stronger every day.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Pricing -->
+<section class="pricing" id="pricing">
+    <div class="pricing-inner">
+        <h2>One Simple Plan</h2>
+        <p class="pricing-sub">Everything included. Cancel anytime.</p>
+        <div class="pricing-card">
+            <div class="price-tag">
+                <span class="price-amount">$10</span>
+                <span class="price-period">/month</span>
+            </div>
+            <ul class="price-features">
+                <li>Full streak tracker with visual progress</li>
+                <li>Emergency craving support + breathing exercise</li>
+                <li>Daily vaping & quitting facts</li>
+                <li>Recovery timeline with milestones</li>
+                <li>Identity & goal reminders</li>
+                <li>Optional faith-based (Islamic) reminders</li>
+                <li>New features as we build them</li>
+            </ul>
+            <!-- Replace this href with your Stripe payment link -->
+            <a href="#" class="btn-subscribe" id="subscribe-btn">Subscribe Now</a>
+            <p class="price-note">Cancel anytime. No contracts.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="footer-inner">
+        <div class="footer-brand">Unclouded</div>
+        <p class="footer-copy">&copy; 2026 Unclouded. All rights reserved.</p>
+    </div>
+</footer>
 
 <script src="script.js"></script>
 </body>
