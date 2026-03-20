@@ -9,6 +9,7 @@ import {
   Alert,
   Platform,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Colors } from '../utils/colors';
 import { getSession, getUsers, saveUsers } from '../utils/storage';
 
@@ -32,9 +33,8 @@ export default function IdentityScreen({ navigation }) {
   const [identity, setIdentity] = useState('');
   const [selectedMotivations, setSelectedMotivations] = useState([]);
   const [years, setYears] = useState('');
-  const [quitDate, setQuitDate] = useState(
-    new Date().toISOString().split('T')[0]
-  );
+  const [quitDate, setQuitDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   function toggleMotivation(key) {
     setSelectedMotivations((prev) =>
@@ -43,7 +43,8 @@ export default function IdentityScreen({ navigation }) {
   }
 
   async function handleSubmit() {
-    if (!identity.trim() || !years || !quitDate) {
+    const quitDateStr = quitDate.toISOString().split('T')[0];
+    if (!identity.trim() || !years || !quitDateStr) {
       Alert.alert('Error', 'Please fill in all fields.');
       return;
     }
@@ -55,7 +56,7 @@ export default function IdentityScreen({ navigation }) {
       identity: identity.trim(),
       motivations: selectedMotivations,
       vapingYears: years,
-      quitDate,
+      quitDate: quitDateStr,
     };
     await saveUsers(users);
     navigation.replace('Dashboard');
@@ -101,7 +102,11 @@ export default function IdentityScreen({ navigation }) {
                   styles.checkDot,
                   selectedMotivations.includes(m.key) && styles.checkDotActive,
                 ]}
-              />
+              >
+                {selectedMotivations.includes(m.key) && (
+                  <Text style={styles.checkMark}>✓</Text>
+                )}
+              </View>
               <Text
                 style={[
                   styles.checkboxText,
@@ -141,17 +146,39 @@ export default function IdentityScreen({ navigation }) {
         <Text style={styles.label}>
           When did you quit (or when do you want to start)?
         </Text>
-        <TextInput
-          style={styles.input}
-          placeholder="YYYY-MM-DD"
-          placeholderTextColor={Colors.textMuted}
-          value={quitDate}
-          onChangeText={setQuitDate}
-          keyboardType={Platform.OS === 'ios' ? 'default' : 'default'}
-        />
-        <Text style={styles.hint}>
-          Format: YYYY-MM-DD (e.g. 2026-03-19)
-        </Text>
+        {Platform.OS === 'ios' ? (
+          <DateTimePicker
+            value={quitDate}
+            mode="date"
+            display="spinner"
+            onChange={(event, date) => { if (date) setQuitDate(date); }}
+                        style={styles.datePicker}
+            textColor={Colors.textBright}
+            themeVariant="dark"
+          />
+        ) : (
+          <>
+            <TouchableOpacity
+              style={styles.dateBtn}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Text style={styles.dateBtnText}>
+                {quitDate.toLocaleDateString()}
+              </Text>
+            </TouchableOpacity>
+            {showDatePicker && (
+              <DateTimePicker
+                value={quitDate}
+                mode="date"
+                display="default"
+                                onChange={(event, date) => {
+                  setShowDatePicker(false);
+                  if (date) setQuitDate(date);
+                }}
+              />
+            )}
+          </>
+        )}
 
         <TouchableOpacity style={styles.btnPrimary} onPress={handleSubmit}>
           <Text style={styles.btnPrimaryText}>Begin My Journey</Text>
@@ -238,8 +265,16 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   checkDotActive: {
-    backgroundColor: Colors.blue,
+    backgroundColor: Colors.red,
     borderColor: Colors.red,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkMark: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 14,
   },
   checkboxText: {
     color: Colors.textSecondary,
@@ -267,6 +302,21 @@ const styles = StyleSheet.create({
   },
   optionText: { color: Colors.textSecondary, fontSize: 14 },
   optionTextActive: { color: Colors.redLight, fontWeight: '600' },
+  datePicker: {
+    height: 150,
+    marginTop: 4,
+  },
+  dateBtn: {
+    backgroundColor: Colors.bgInput,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    padding: 14,
+  },
+  dateBtnText: {
+    color: Colors.text,
+    fontSize: 16,
+  },
   btnPrimary: {
     backgroundColor: Colors.red,
     borderRadius: 12,
