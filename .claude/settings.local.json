@@ -13,7 +13,8 @@
       "Read(//c/Program Files/**)",
       "Read(//c/Users/amrs2/OneDrive/Desktop/FocusPath-Website/.claude/worktrees/elegant-jackson/$HOME/AppData/Local/Programs/**)",
       "Read(//c/Users/amrs2/OneDrive/Desktop/FocusPath-Website/.claude/worktrees/elegant-jackson/$APPDATA/**)",
-      "Bash(cp -r \"/c/Users/amrs2/OneDrive/Desktop/FocusPath-Website/.claude/worktrees/elegant-jackson/FocusPath-App\" \"/c/Users/amrs2/OneDrive/Desktop/FocusPath-Website/FocusPath-App\")"
+      "Bash(cp -r \"/c/Users/amrs2/OneDrive/Desktop/FocusPath-Website/.claude/worktrees/elegant-jackson/FocusPath-App\" \"/c/Users/amrs2/OneDrive/Desktop/FocusPath-Website/FocusPath-App\")",
+      "Bash(gh pr:*)"
     ]
   }
 }
