@@ -14,6 +14,7 @@ import { NEGATIVE_FACTS, POSITIVE_FACTS, ALLAH_REMINDERS } from '../data/facts';
 import StreakRing from '../components/StreakRing';
 import FactCard from '../components/FactCard';
 import TimelineList from '../components/TimelineList';
+import { AlertIcon, MosqueIcon } from '../components/Icons';
 
 export default function DashboardScreen({ navigation }) {
   const [user, setUser] = useState(null);
@@ -85,7 +86,7 @@ export default function DashboardScreen({ navigation }) {
           onPress={() => navigation.navigate('Emergency', { user })}
           activeOpacity={0.8}
         >
-          <Text style={styles.emergencyIcon}>🆘</Text>
+          <AlertIcon size={28} />
           <Text style={styles.emergencyText}>I Want to Vape — HELP</Text>
         </TouchableOpacity>
 
@@ -96,7 +97,7 @@ export default function DashboardScreen({ navigation }) {
         {/* Allah Reminder */}
         {hasAllah && (
           <View style={styles.allahCard}>
-            <Text style={styles.allahIcon}>🕌</Text>
+            <View style={styles.allahIcon}><MosqueIcon size={28} /></View>
             <Text style={styles.allahTitle}>DAILY REMINDER</Text>
             <Text style={styles.allahText}>{allahReminder}</Text>
           </View>

@@ -13,6 +13,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { Colors } from '../utils/colors';
 import { validateHabitPhoto } from '../utils/photoValidator';
+import { CloseIcon, CheckIcon, CameraIcon, FireIcon } from '../components/Icons';
 
 const EXTRA_TIME_BONUS = 20;
 
@@ -186,7 +187,7 @@ export default function HabitSessionScreen({ navigation, route }) {
               ]);
             }}
           >
-            <Text style={styles.cancelText}>✕</Text>
+            <CloseIcon size={18} color={Colors.textMuted} />
           </TouchableOpacity>
           <View style={styles.habitBadge}>
             <Text style={styles.habitBadgeText}>{habit.name}</Text>
@@ -207,7 +208,7 @@ export default function HabitSessionScreen({ navigation, route }) {
                 <Image source={{ uri: beforePhoto }} style={styles.photoPreview} />
               ) : (
                 <>
-                  <Text style={styles.cameraIcon}>📸</Text>
+                  <View style={styles.cameraIcon}><CameraIcon size={36} /></View>
                   <Text style={styles.photoPlaceholderText}>Take a before photo</Text>
                 </>
               )}
@@ -274,7 +275,7 @@ export default function HabitSessionScreen({ navigation, route }) {
                 <Image source={{ uri: afterPhoto }} style={styles.photoPreview} />
               ) : (
                 <>
-                  <Text style={styles.cameraIcon}>📸</Text>
+                  <View style={styles.cameraIcon}><CameraIcon size={36} /></View>
                   <Text style={styles.photoPlaceholderText}>Take an after photo</Text>
                 </>
               )}
@@ -315,7 +316,7 @@ export default function HabitSessionScreen({ navigation, route }) {
             </View>
 
             <TouchableOpacity style={styles.primaryBtn} onPress={handleDone}>
-              <Text style={styles.primaryBtnText}>Yes, I'm Done! ✓</Text>
+              <Text style={styles.primaryBtnText}>Yes, I'm Done!</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.secondaryBtn} onPress={handleNotDone}>
@@ -327,7 +328,10 @@ export default function HabitSessionScreen({ navigation, route }) {
         {/* STEP: Extra Time */}
         {step === 'extra_time' && (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Extra Time 🔥</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'center' }}>
+              <Text style={styles.stepTitle}>Extra Time</Text>
+              <FireIcon size={22} />
+            </View>
             <Text style={styles.stepDesc}>
               Keep going! You'll earn bonus points{'\n'}
               (+{EXTRA_TIME_BONUS} pts for extra effort)
@@ -343,7 +347,7 @@ export default function HabitSessionScreen({ navigation, route }) {
             </Text>
 
             <TouchableOpacity style={styles.primaryBtn} onPress={handleExtraDone}>
-              <Text style={styles.primaryBtnText}>I'm Done Now ✓</Text>
+              <Text style={styles.primaryBtnText}>I'm Done Now</Text>
             </TouchableOpacity>
           </View>
         )}

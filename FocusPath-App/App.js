@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { getCurrentUser } from './src/utils/storage';
 import { Colors } from './src/utils/colors';
 
+import { HomeIcon, TimelineIcon, EmergencyIcon, FactsIcon, ProfileIcon } from './src/components/Icons';
 import LoginScreen from './src/screens/LoginScreen';
 import SignupScreen from './src/screens/SignupScreen';
 import IdentityScreen from './src/screens/IdentityScreen';
@@ -22,23 +23,22 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function TabIcon({ label, focused }) {
-  const icons = {
-    Home: '🏠',
-    Timeline: '📈',
-    Emergency: '🆘',
-    Facts: '📊',
-    Profile: '👤',
+  const color = focused ? Colors.red : Colors.textMuted;
+  const iconMap = {
+    Home: <HomeIcon size={24} color={color} focused={focused} />,
+    Timeline: <TimelineIcon size={24} color={color} focused={focused} />,
+    Emergency: <EmergencyIcon size={28} color={color} focused={focused} />,
+    Facts: <FactsIcon size={24} color={color} focused={focused} />,
+    Profile: <ProfileIcon size={24} color={color} focused={focused} />,
   };
   return (
     <View style={styles.tabIconWrap}>
       {label === 'Emergency' ? (
         <View style={[styles.emergencyTabBtn, focused && styles.emergencyTabBtnActive]}>
-          <Text style={styles.emergencyTabIcon}>{icons[label]}</Text>
+          {iconMap[label]}
         </View>
       ) : (
-        <Text style={[styles.tabIcon, focused && styles.tabIconActive]}>
-          {icons[label]}
-        </Text>
+        iconMap[label]
       )}
     </View>
   );
