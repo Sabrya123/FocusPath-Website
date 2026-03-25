@@ -12,12 +12,15 @@ import {
 } from 'react-native';
 import { Colors } from '../utils/colors';
 import { getUsers, saveUsers, setSession } from '../utils/storage';
+import { EyeOpen, EyeClosed } from '../components/EyeIcon';
 
 export default function SignupScreen({ navigation }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   async function handleSignup() {
     const trimmedName = name.trim();
@@ -42,18 +45,8 @@ export default function SignupScreen({ navigation }) {
       return;
     }
 
-    users[trimmedEmail] = {
-      name: trimmedName,
-      email: trimmedEmail,
-      password,
-      identity: null,
-      quitDate: null,
-      motivations: [],
-      vapingYears: null,
-      createdAt: new Date().toISOString(),
-    };
-
-    await saveUsers(users);
+    // Don't persist new accounts to storage for now
+    // Just set session so the app flow works during this session
     await setSession(trimmedEmail);
     navigation.replace('Identity');
   }
@@ -94,30 +87,46 @@ export default function SignupScreen({ navigation }) {
           />
 
           <Text style={styles.label}>Password</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Create a password (6+ chars)"
-            placeholderTextColor={Colors.textMuted}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={true}
-            textContentType="none"
-            autoComplete="off"
-            autoCorrect={false}
-          />
+          <View style={styles.passwordWrap}>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="Create a password (6+ chars)"
+              placeholderTextColor={Colors.textMuted}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              textContentType="newPassword"
+              autoComplete="new-password"
+              autoCorrect={false}
+            />
+            <TouchableOpacity
+              style={styles.eyeBtn}
+              onPress={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? <EyeClosed size={22} color={Colors.textSecondary} /> : <EyeOpen size={22} color={Colors.textSecondary} />}
+            </TouchableOpacity>
+          </View>
 
           <Text style={styles.label}>Confirm Password</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Confirm password"
-            placeholderTextColor={Colors.textMuted}
-            value={confirm}
-            onChangeText={setConfirm}
-            secureTextEntry={true}
-            textContentType="none"
-            autoComplete="off"
-            autoCorrect={false}
-          />
+          <View style={styles.passwordWrap}>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="Confirm password"
+              placeholderTextColor={Colors.textMuted}
+              value={confirm}
+              onChangeText={setConfirm}
+              secureTextEntry={!showConfirm}
+              textContentType="newPassword"
+              autoComplete="new-password"
+              autoCorrect={false}
+            />
+            <TouchableOpacity
+              style={styles.eyeBtn}
+              onPress={() => setShowConfirm(!showConfirm)}
+            >
+              {showConfirm ? <EyeClosed size={22} color={Colors.textSecondary} /> : <EyeOpen size={22} color={Colors.textSecondary} />}
+            </TouchableOpacity>
+          </View>
 
           <TouchableOpacity style={styles.btnPrimary} onPress={handleSignup}>
             <Text style={styles.btnPrimaryText}>Sign Up</Text>
@@ -188,6 +197,24 @@ const styles = StyleSheet.create({
     padding: 14,
     color: Colors.text,
     fontSize: 16,
+  },
+  passwordWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.bgInput,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 10,
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 14,
+    color: Colors.text,
+    fontSize: 16,
+  },
+  eyeBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 14,
   },
   btnPrimary: {
     backgroundColor: Colors.red,

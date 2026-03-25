@@ -8,10 +8,124 @@ import {
   ScrollView,
   Alert,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Colors } from '../utils/colors';
 import { getSession, getUsers, saveUsers } from '../utils/storage';
+
+function getWordCount(text) {
+  return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+}
+
+// Profanity / inappropriate content filter
+const BLOCKED_WORDS = [
+  'fuck', 'shit', 'ass', 'bitch', 'damn', 'hell', 'dick', 'pussy', 'cock',
+  'cunt', 'bastard', 'slut', 'whore', 'nigga', 'nigger', 'fag', 'retard',
+  'kill', 'murder', 'suicide', 'die ', 'death', 'hate', 'destroy', 'weapon',
+  'drug', 'weed', 'cocaine', 'heroin', 'meth', 'drunk', 'alcohol', 'beer',
+  'wine', 'liquor', 'porn', 'sex', 'naked', 'nude',
+];
+
+// Negative / toxic sentiment patterns
+const NEGATIVE_PATTERNS = [
+  /i\s+(don'?t|dont)\s+care/i,
+  /this\s+is\s+(stupid|dumb|trash|garbage|waste)/i,
+  /i\s+(hate|despise)\s/i,
+  /who\s+cares/i,
+  /doesn'?t\s+matter/i,
+  /whatever/i,
+  /leave\s+me\s+alone/i,
+  /shut\s+up/i,
+  /go\s+away/i,
+  /none\s+of\s+your\s+business/i,
+  /not\s+your\s+(business|concern)/i,
+  /mind\s+your\s+own/i,
+  /waste\s+of\s+time/i,
+  /don'?t\s+want\s+to/i,
+  /forced\s+to/i,
+];
+
+function validateIdentityText(text) {
+  const words = text.trim().split(/\s+/).filter(w => w.length > 0);
+
+  // Check minimum word count
+  if (words.length < 50) {
+    return { valid: false, message: `You need at least 50 words. You have ${words.length} so far.` };
+  }
+
+  // Check for profanity / inappropriate content
+  const lower = text.toLowerCase();
+  for (const bad of BLOCKED_WORDS) {
+    if (lower.includes(bad)) {
+      return { valid: false, message: "Your response contains inappropriate language. Please keep it clean and positive — this is about who you want to become." };
+    }
+  }
+
+  // Check for negative / toxic sentiment
+  for (const pattern of NEGATIVE_PATTERNS) {
+    if (pattern.test(text)) {
+      return { valid: false, message: "Your response seems negative or dismissive. This is your chance to envision your best self — try to write something positive and meaningful." };
+    }
+  }
+
+  // Check it's not just random/repeated words
+  const uniqueWords = new Set(words.map(w => w.toLowerCase()));
+  if (uniqueWords.size < words.length * 0.35) {
+    return { valid: false, message: "It looks like you're repeating the same words. Please write something meaningful about who you want to become." };
+  }
+
+  // Check for gibberish - words should have vowels
+  const gibberishCount = words.filter(w => {
+    const cleaned = w.toLowerCase().replace(/[^a-z]/g, '');
+    return cleaned.length > 2 && !/[aeiou]/i.test(cleaned);
+  }).length;
+  if (gibberishCount > words.length * 0.3) {
+    return { valid: false, message: "Some of what you wrote doesn't seem to make sense. Please write a clear paragraph about who you want to become." };
+  }
+
+  // Check for spam / lazy text (same character repeated, keyboard smashing)
+  if (/(.)\1{4,}/.test(text)) {
+    return { valid: false, message: "Please write a real response — no repeated characters or keyboard smashing." };
+  }
+
+  // Check for copy-paste of numbers or random characters
+  const letterRatio = (text.match(/[a-zA-Z]/g) || []).length / text.length;
+  if (letterRatio < 0.6) {
+    return { valid: false, message: "Your response has too many numbers or symbols. Write naturally about who you want to become." };
+  }
+
+  // Check for relevant content - must mention personal growth / identity topics
+  const relevantKeywords = ['i ', 'me ', 'my ', 'want', 'become', 'person', 'better', 'life',
+    'health', 'strong', 'discipline', 'quit', 'stop', 'free', 'family', 'future', 'goal',
+    'change', 'improve', 'grow', 'faith', 'allah', 'god', 'body', 'mind', 'clean',
+    'happy', 'peace', 'success', 'respect', 'love', 'care', 'breath', 'lung', 'fit',
+    'money', 'save', 'proud', 'confident', 'energy', 'sport', 'gym', 'pray', 'focus',
+    'control', 'myself', 'overcome', 'addiction', 'vape', 'smoke', 'nicotine',
+    'purpose', 'dream', 'achieve', 'strength', 'courage', 'hope', 'inspire',
+    'resilient', 'determined', 'brave', 'capable', 'worthy', 'deserve',
+    'heal', 'recover', 'transform', 'restart', 'new', 'begin', 'journey',
+    'responsible', 'mature', 'independent', 'leader', 'role model', 'example'];
+  const matchCount = relevantKeywords.filter(kw => lower.includes(kw)).length;
+
+  if (matchCount < 3) {
+    return { valid: false, message: "Your response doesn't seem to be about personal growth or your quitting journey. Tell us about who you truly want to become and why it matters to you." };
+  }
+
+  // Check sentence structure - needs proper sentences
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 5);
+  if (sentences.length < 3) {
+    return { valid: false, message: "Write at least 3 proper sentences describing your vision for yourself." };
+  }
+
+  // Check average word length (gibberish tends to have weird lengths)
+  const avgWordLen = words.reduce((sum, w) => sum + w.length, 0) / words.length;
+  if (avgWordLen < 2.5 || avgWordLen > 12) {
+    return { valid: false, message: "Something seems off with your writing. Please write naturally about who you want to become." };
+  }
+
+  return { valid: true, message: "Your vision is powerful and clear. Let's make it happen." };
+}
 
 const MOTIVATIONS = [
   { key: 'health', label: 'Better health' },
@@ -31,10 +145,14 @@ const YEARS_OPTIONS = [
 
 export default function IdentityScreen({ navigation }) {
   const [identity, setIdentity] = useState('');
+  const [identityValidation, setIdentityValidation] = useState(null);
+  const [isValidating, setIsValidating] = useState(false);
   const [selectedMotivations, setSelectedMotivations] = useState([]);
   const [years, setYears] = useState('');
   const [quitDate, setQuitDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const wordCount = getWordCount(identity);
 
   function toggleMotivation(key) {
     setSelectedMotivations((prev) =>
@@ -42,10 +160,28 @@ export default function IdentityScreen({ navigation }) {
     );
   }
 
+  function handleValidateIdentity() {
+    setIsValidating(true);
+    // Small delay to simulate AI checking
+    setTimeout(() => {
+      const result = validateIdentityText(identity);
+      setIdentityValidation(result);
+      setIsValidating(false);
+    }, 800);
+  }
+
   async function handleSubmit() {
     const quitDateStr = quitDate.toISOString().split('T')[0];
     if (!identity.trim() || !years || !quitDateStr) {
       Alert.alert('Error', 'Please fill in all fields.');
+      return;
+    }
+
+    // Validate identity text
+    const validation = validateIdentityText(identity);
+    if (!validation.valid) {
+      setIdentityValidation(validation);
+      Alert.alert('Hold on', validation.message);
       return;
     }
 
@@ -76,15 +212,41 @@ export default function IdentityScreen({ navigation }) {
 
       <View style={styles.card}>
         <Text style={styles.label}>Who do you want to become?</Text>
+        <Text style={styles.hint}>Write at least 50 words about the person you want to be.</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
-          placeholder="e.g. A healthier, more disciplined version of myself..."
+          placeholder="e.g. I want to become a healthier, more disciplined version of myself. Someone who doesn't rely on nicotine to get through the day..."
           placeholderTextColor={Colors.textMuted}
           value={identity}
-          onChangeText={setIdentity}
+          onChangeText={(text) => {
+            setIdentity(text);
+            setIdentityValidation(null);
+          }}
           multiline
-          numberOfLines={3}
+          numberOfLines={5}
         />
+        <View style={styles.wordCountRow}>
+          <Text style={[styles.wordCount, wordCount >= 50 ? styles.wordCountGood : styles.wordCountBad]}>
+            {wordCount}/50 words
+          </Text>
+          {wordCount >= 50 && !identityValidation && (
+            <TouchableOpacity style={styles.validateBtn} onPress={handleValidateIdentity}>
+              {isValidating ? (
+                <ActivityIndicator size="small" color={Colors.red} />
+              ) : (
+                <Text style={styles.validateBtnText}>✓ Check with AI</Text>
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
+        {identityValidation && (
+          <View style={[styles.validationBox, identityValidation.valid ? styles.validationGood : styles.validationBad]}>
+            <Text style={styles.validationIcon}>{identityValidation.valid ? '✓' : '✗'}</Text>
+            <Text style={[styles.validationText, identityValidation.valid ? styles.validationTextGood : styles.validationTextBad]}>
+              {identityValidation.message}
+            </Text>
+          </View>
+        )}
 
         <Text style={styles.label}>What motivates you to quit?</Text>
         <View style={styles.checkboxGrid}>
@@ -229,13 +391,77 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   textArea: {
-    minHeight: 80,
+    minHeight: 120,
     textAlignVertical: 'top',
   },
   hint: {
     fontSize: 12,
     color: Colors.textMuted,
     marginTop: 4,
+    marginBottom: 8,
+  },
+  wordCountRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  wordCount: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  wordCountGood: {
+    color: '#22c55e',
+  },
+  wordCountBad: {
+    color: Colors.textMuted,
+  },
+  validateBtn: {
+    backgroundColor: 'rgba(220, 38, 38, 0.1)',
+    borderWidth: 1,
+    borderColor: Colors.red,
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  validateBtnText: {
+    color: Colors.red,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  validationBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 10,
+    gap: 8,
+  },
+  validationGood: {
+    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.3)',
+  },
+  validationBad: {
+    backgroundColor: 'rgba(220, 38, 38, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(220, 38, 38, 0.3)',
+  },
+  validationIcon: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.textBright,
+  },
+  validationText: {
+    fontSize: 13,
+    flex: 1,
+    lineHeight: 18,
+  },
+  validationTextGood: {
+    color: '#22c55e',
+  },
+  validationTextBad: {
+    color: Colors.redLight,
   },
   checkboxGrid: {
     flexDirection: 'row',

@@ -10,18 +10,20 @@ import { Colors } from './src/utils/colors';
 import LoginScreen from './src/screens/LoginScreen';
 import SignupScreen from './src/screens/SignupScreen';
 import IdentityScreen from './src/screens/IdentityScreen';
-import TrackerTab from './src/screens/TrackerTab';
+import HomeTab from './src/screens/HomeTab';
 import TimelineTab from './src/screens/TimelineTab';
 import EmergencyTab from './src/screens/EmergencyTab';
 import FactsTab from './src/screens/FactsTab';
 import ProfileTab from './src/screens/ProfileTab';
+import AddHabitScreen from './src/screens/AddHabitScreen';
+import HabitSessionScreen from './src/screens/HabitSessionScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function TabIcon({ label, focused }) {
   const icons = {
-    Tracker: '🔥',
+    Home: '🏠',
     Timeline: '📈',
     Emergency: '🆘',
     Facts: '📊',
@@ -56,7 +58,7 @@ function MainTabs() {
         ),
       })}
     >
-      <Tab.Screen name="Tracker" component={TrackerTab} />
+      <Tab.Screen name="Home" component={HomeTab} />
       <Tab.Screen name="Timeline" component={TimelineTab} />
       <Tab.Screen
         name="Emergency"
@@ -119,6 +121,16 @@ export default function App() {
         <Stack.Screen name="Signup" component={SignupScreen} />
         <Stack.Screen name="Identity" component={IdentityScreen} />
         <Stack.Screen name="Dashboard" component={MainTabs} />
+        <Stack.Screen
+          name="AddHabit"
+          component={AddHabitScreen}
+          options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+        />
+        <Stack.Screen
+          name="HabitSession"
+          component={HabitSessionScreen}
+          options={{ presentation: 'fullScreenModal', gestureEnabled: false }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

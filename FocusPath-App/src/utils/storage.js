@@ -24,6 +24,11 @@ export async function clearSession() {
   await AsyncStorage.removeItem(SESSION_KEY);
 }
 
+export async function clearAllData() {
+  await AsyncStorage.removeItem(USERS_KEY);
+  await AsyncStorage.removeItem(SESSION_KEY);
+}
+
 export async function getCurrentUser() {
   const email = await getSession();
   if (!email) return null;
