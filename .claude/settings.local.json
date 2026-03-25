@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx --version)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(cp \"/c/Users/amrs2/OneDrive/Desktop/FocusPath-Website/.claude/worktrees/elegant-jackson/index.html\" \"/c/Users/amrs2/OneDrive/Desktop/FocusPath-Website/index.html\")",
+      "Bash(cp \"/c/Users/amrs2/OneDrive/Desktop/FocusPath-Website/.claude/worktrees/elegant-jackson/style.css\" \"/c/Users/amrs2/OneDrive/Desktop/FocusPath-Website/style.css\")",
+      "Bash(cp \"/c/Users/amrs2/OneDrive/Desktop/FocusPath-Website/.claude/worktrees/elegant-jackson/script.js\" \"/c/Users/amrs2/OneDrive/Desktop/FocusPath-Website/script.js\")",
+      "Bash(npm --version)",
+      "Bash(\"/c/Program Files/nodejs/node.exe\" --version)",
+      "Bash(\"/c/Users/amrs2/AppData/Roaming/nvm/current/node.exe\" --version)",
+      "Bash(cmd //c \"node --version\")",
+      "Read(//c/Program Files/**)",
+      "Read(//c/Users/amrs2/OneDrive/Desktop/FocusPath-Website/.claude/worktrees/elegant-jackson/$HOME/AppData/Local/Programs/**)",
+      "Read(//c/Users/amrs2/OneDrive/Desktop/FocusPath-Website/.claude/worktrees/elegant-jackson/$APPDATA/**)",
+      "Bash(cp -r \"/c/Users/amrs2/OneDrive/Desktop/FocusPath-Website/.claude/worktrees/elegant-jackson/FocusPath-App\" \"/c/Users/amrs2/OneDrive/Desktop/FocusPath-Website/FocusPath-App\")"
+    ]
+  }
+}

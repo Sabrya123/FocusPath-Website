@@ -1,34 +1,123 @@
 <!DOCTYPE html>
-<html lang="en-GB">
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
-    <title>The Focus Path</title>
+    <title>Unclouded — Quit Vaping For Good</title>
 </head>
 <body>
-    <header>
-        <h1>✨ The Focus Path</h1>
-        <p>Swap the habit. Reclaim your spirit.</p>
-    </header>
 
-    <main>
-        <section id="craving-zone">
-            <h2>Feeling a craving?</h2>
-            <button onclick="startTimer()">Start 5-Minute Focus</button>
-            <p id="timer-display">Press start to begin your habit swap.</p>
-        </section>
+<!-- Nav -->
+<nav class="nav">
+    <div class="nav-inner">
+        <div class="nav-brand">
+            <span class="nav-name">Unclouded</span>
+        </div>
+        <a href="#pricing" class="nav-cta">Get the App</a>
+    </div>
+</nav>
 
-        <section id="alternatives">
-            <div class="card">
-                <h3>📖 Study</h3>
-                <p>Open your notes. Give it 5 minutes of total focus.</p>
+<!-- Hero -->
+<section class="hero">
+    <div class="hero-inner">
+        <h1>Quit Vaping.<br>Reclaim Your Life.</h1>
+        <p class="hero-sub">Unclouded is your personal quit-vaping companion. Daily motivation, emergency craving support, breathing exercises, and a streak tracker that keeps you accountable — all in one app.</p>
+        <a href="#pricing" class="btn-hero">Start Your Journey — $10/month</a>
+    </div>
+</section>
+
+<!-- Features -->
+<section class="features" id="features">
+    <div class="features-inner">
+        <h2>Everything You Need to Stay Free</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <h3>Streak Tracker</h3>
+                <p>Watch your vape-free days grow with a visual progress ring. Hours, days, and weeks — all tracked.</p>
             </div>
-            <div class="card">
-                <h3>🙏 Faith</h3>
-                <p>Connect with your creator. Recite a prayer or meditate.</p>
+            <div class="feature-card">
+                <h3>Emergency Help</h3>
+                <p>About to break? Hit the emergency button for instant positive reinforcements and a guided 2-minute breathing exercise.</p>
             </div>
-        </section>
-    </main>
+            <div class="feature-card">
+                <h3>Daily Facts</h3>
+                <p>One daily fact about vaping's harm and one about the benefits of quitting. Knowledge is power.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Faith-Based Support</h3>
+                <p>If your goal is to get closer to Allah, the app provides daily Islamic reminders and Quran-based encouragement.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Recovery Timeline</h3>
+                <p>See exactly what happens to your body when you quit — from the hardest days to the victory milestones.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Identity & Goals</h3>
+                <p>Define who you want to become. The app reminds you of your vision every single day.</p>
+            </div>
+        </div>
+    </div>
+</section>
 
-    <script src="script.js"></script>
+<!-- How It Works -->
+<section class="how-it-works">
+    <div class="how-inner">
+        <h2>How It Works</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="step-num">1</div>
+                <h3>Subscribe</h3>
+                <p>Start your $10/month subscription and download the app.</p>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <h3>Set Your Identity</h3>
+                <p>Tell us who you want to become and what motivates you to quit.</p>
+            </div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <h3>Stay Accountable</h3>
+                <p>Track your streak, use emergency help when cravings hit, and grow stronger every day.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Pricing -->
+<section class="pricing" id="pricing">
+    <div class="pricing-inner">
+        <h2>One Simple Plan</h2>
+        <p class="pricing-sub">Everything included. Cancel anytime.</p>
+        <div class="pricing-card">
+            <div class="price-tag">
+                <span class="price-amount">$10</span>
+                <span class="price-period">/month</span>
+            </div>
+            <ul class="price-features">
+                <li>Full streak tracker with visual progress</li>
+                <li>Emergency craving support + breathing exercise</li>
+                <li>Daily vaping & quitting facts</li>
+                <li>Recovery timeline with milestones</li>
+                <li>Identity & goal reminders</li>
+                <li>Optional faith-based (Islamic) reminders</li>
+                <li>New features as we build them</li>
+            </ul>
+            <!-- Replace this href with your Stripe payment link -->
+            <a href="#" class="btn-subscribe" id="subscribe-btn">Subscribe Now</a>
+            <p class="price-note">Cancel anytime. No contracts.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="footer-inner">
+        <div class="footer-brand">Unclouded</div>
+        <p class="footer-copy">&copy; 2026 Unclouded. All rights reserved.</p>
+    </div>
+</footer>
+
+<script src="script.js"></script>
 </body>
 </html>
