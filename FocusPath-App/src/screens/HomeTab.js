@@ -7,6 +7,7 @@ import {
   StyleSheet,
   SafeAreaView,
   Alert,
+  Modal,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
@@ -136,30 +137,111 @@ function HabitBlock({ habits, onStart, onDelete, onPressAdd }) {
   );
 }
 
-function PointsInfoCard({ points, streakDays }) {
-  // Determine rank based on points
-  let rank = 'Beginner';
-  let nextRank = 'Fighter';
-  let nextRankPoints = 200;
-  if (points >= 2000) { rank = 'Legend'; nextRank = null; nextRankPoints = null; }
-  else if (points >= 1000) { rank = 'Warrior'; nextRank = 'Legend'; nextRankPoints = 2000; }
-  else if (points >= 500) { rank = 'Champion'; nextRank = 'Warrior'; nextRankPoints = 1000; }
-  else if (points >= 200) { rank = 'Fighter'; nextRank = 'Champion'; nextRankPoints = 500; }
+const ALL_RANKS = [
+  { name: 'Beginner', minPoints: 0, icon: '🌱' },
+  { name: 'Fighter', minPoints: 200, icon: '🥊' },
+  { name: 'Champion', minPoints: 500, icon: '🏆' },
+  { name: 'Warrior', minPoints: 1000, icon: '⚔️' },
+  { name: 'Legend', minPoints: 2000, icon: '👑' },
+  { name: 'UNCLOUDED', minPoints: 5000, icon: '☀️' },
+];
+
+function getRank(points) {
+  for (let i = ALL_RANKS.length - 1; i >= 0; i--) {
+    if (points >= ALL_RANKS[i].minPoints) return i;
+  }
+  return 0;
+}
+
+function RanksModal({ visible, onClose, points }) {
+  const currentIndex = getRank(points);
+  const currentRank = ALL_RANKS[currentIndex];
+  const nextRank = currentIndex < ALL_RANKS.length - 1 ? ALL_RANKS[currentIndex + 1] : null;
+
+  const progressInRank = nextRank
+    ? (points - currentRank.minPoints) / (nextRank.minPoints - currentRank.minPoints)
+    : 1;
 
   return (
-    <View style={styles.gridCard}>
-      <Text style={styles.cardTitle}>Your Rank</Text>
-      <Text style={styles.rankText}>{rank}</Text>
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>All Ranks</Text>
+            <TouchableOpacity onPress={onClose} style={styles.modalClose}>
+              <Text style={styles.modalCloseText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.currentRankBanner}>
+            <Text style={styles.currentRankIcon}>{currentRank.icon}</Text>
+            <Text style={styles.currentRankName}>{currentRank.name}</Text>
+            <Text style={styles.currentRankPts}>{points} pts</Text>
+          </View>
+
+          {nextRank && (
+            <View style={styles.progressSection}>
+              <View style={styles.progressLabels}>
+                <Text style={styles.progressFrom}>{currentRank.name}</Text>
+                <Text style={styles.progressTo}>{nextRank.name}</Text>
+              </View>
+              <View style={styles.progressBarBg}>
+                <View style={[styles.progressBarFill, { width: `${Math.min(progressInRank * 100, 100)}%` }]} />
+              </View>
+              <Text style={styles.progressPts}>
+                {nextRank.minPoints - points} pts to {nextRank.name}
+              </Text>
+            </View>
+          )}
+
+          <View style={styles.ranksList}>
+            {ALL_RANKS.map((r, i) => {
+              const unlocked = i <= currentIndex;
+              const isCurrent = i === currentIndex;
+              return (
+                <View key={r.name} style={[styles.rankRow, isCurrent && styles.rankRowCurrent]}>
+                  <Text style={styles.rankRowIcon}>{r.icon}</Text>
+                  <View style={styles.rankRowInfo}>
+                    <Text style={[styles.rankRowName, unlocked && styles.rankRowNameUnlocked, isCurrent && styles.rankRowNameCurrent]}>
+                      {r.name}
+                    </Text>
+                    <Text style={styles.rankRowPts}>{r.minPoints} pts</Text>
+                  </View>
+                  {unlocked && (
+                    <Text style={styles.rankRowCheck}>✓</Text>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function PointsInfoCard({ points, streakDays, onPress }) {
+  const currentIndex = getRank(points);
+  const rank = ALL_RANKS[currentIndex];
+  const nextRank = currentIndex < ALL_RANKS.length - 1 ? ALL_RANKS[currentIndex + 1] : null;
+
+  return (
+    <TouchableOpacity style={styles.gridCard} onPress={onPress} activeOpacity={0.7}>
+      <View style={styles.rankHeader}>
+        <Text style={styles.cardTitle}>Your Rank</Text>
+        <Text style={styles.rankTap}>Tap to view all ›</Text>
+      </View>
+      <Text style={styles.rankText}>{rank.icon} {rank.name}</Text>
       {nextRank && (
         <Text style={styles.nextRankText}>
-          {nextRankPoints - points} pts to {nextRank}
+          {nextRank.minPoints - points} pts to {nextRank.name}
         </Text>
       )}
       <View style={styles.pointsRules}>
         <Text style={styles.ruleText}>✓ Complete all habits: +{POINTS_PER_COMPLETION} pts</Text>
         <Text style={styles.ruleText}>✗ Miss a day: -{POINTS_LOST_ON_MISS} pts & streak resets</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -179,6 +261,7 @@ export default function HomeTab({ navigation }) {
   const [allDone, setAllDone] = useState(false);
   const [identity, setIdentity] = useState('');
   const [email, setEmail] = useState('');
+  const [showRanks, setShowRanks] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -367,7 +450,8 @@ export default function HomeTab({ navigation }) {
             onDelete={deleteHabit}
             onPressAdd={openAddHabit}
           />
-          <PointsInfoCard points={points} streakDays={streakDays} />
+          <PointsInfoCard points={points} streakDays={streakDays} onPress={() => setShowRanks(true)} />
+          <RanksModal visible={showRanks} onClose={() => setShowRanks(false)} points={points} />
           <MotivationCard identity={identity} />
         </View>
       </ScrollView>
@@ -596,6 +680,15 @@ const styles = StyleSheet.create({
   },
 
   // Points / Rank
+  rankHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  rankTap: {
+    fontSize: 12,
+    color: Colors.textMuted,
+  },
   rankText: {
     fontSize: 24,
     fontWeight: '800',
@@ -614,6 +707,144 @@ const styles = StyleSheet.create({
   ruleText: {
     fontSize: 12,
     color: Colors.textMuted,
+  },
+
+  // Ranks Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: Colors.bgCard,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    maxHeight: '85%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: Colors.textBright,
+  },
+  modalClose: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCloseText: {
+    color: Colors.textBright,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  currentRankBanner: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  currentRankIcon: {
+    fontSize: 48,
+    marginBottom: 8,
+  },
+  currentRankName: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: Colors.redLight,
+  },
+  currentRankPts: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    marginTop: 4,
+  },
+  progressSection: {
+    marginBottom: 24,
+  },
+  progressLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  progressFrom: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontWeight: '600',
+  },
+  progressTo: {
+    fontSize: 12,
+    color: Colors.redLight,
+    fontWeight: '600',
+  },
+  progressBarBg: {
+    height: 10,
+    backgroundColor: Colors.border,
+    borderRadius: 5,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: Colors.red,
+    borderRadius: 5,
+  },
+  progressPts: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  ranksList: {
+    gap: 8,
+  },
+  rankRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: Colors.bg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  rankRowCurrent: {
+    borderColor: Colors.red,
+    backgroundColor: '#1a0a0a',
+  },
+  rankRowIcon: {
+    fontSize: 24,
+    marginRight: 14,
+  },
+  rankRowInfo: {
+    flex: 1,
+  },
+  rankRowName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.textMuted,
+  },
+  rankRowNameUnlocked: {
+    color: Colors.text,
+  },
+  rankRowNameCurrent: {
+    color: Colors.redLight,
+  },
+  rankRowPts: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  rankRowCheck: {
+    fontSize: 16,
+    color: Colors.green,
+    fontWeight: '700',
   },
 
   // Identity
