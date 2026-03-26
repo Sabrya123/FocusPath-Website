@@ -18,11 +18,13 @@ const BREATHE_IN = 4000;
 const BREATHE_OUT = 4000;
 const TOTAL_SECONDS = 120;
 
-const BUTTON_SIZE = Math.min(SCREEN_W * 0.52, 200);
-const CASE_SIZE = BUTTON_SIZE + 40;
+const BASE_SIZE = Math.min(SCREEN_W * 0.6, 230);
+const BUTTON_SIZE = BASE_SIZE * 0.58;
+const CASE_W = BASE_SIZE * 0.7;
+const CASE_H = BUTTON_SIZE * 1.1;
 
 export default function EmergencyTab() {
-  const [phase, setPhase] = useState('closed'); // closed | open | breathing | complete
+  const [phase, setPhase] = useState('closed');
   const [breathingText, setBreathingText] = useState('');
   const [timeLeft, setTimeLeft] = useState(TOTAL_SECONDS);
   const [user, setUser] = useState(null);
@@ -39,22 +41,15 @@ export default function EmergencyTab() {
   const pulseRef = useRef(null);
 
   useFocusEffect(useCallback(() => { loadUser(); }, []));
-
-  async function loadUser() {
-    const u = await getCurrentUser();
-    setUser(u);
-  }
-
+  async function loadUser() { setUser(await getCurrentUser()); }
   useEffect(() => () => stopBreathing(), []);
 
   useEffect(() => {
     if (phase === 'open') {
-      pulseRef.current = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 1.04, duration: 800, useNativeDriver: true }),
-          Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
-        ])
-      );
+      pulseRef.current = Animated.loop(Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.05, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+      ]));
       pulseRef.current.start();
     } else {
       if (pulseRef.current) pulseRef.current.stop();
@@ -63,12 +58,7 @@ export default function EmergencyTab() {
   }, [phase]);
 
   function openCase() {
-    Animated.spring(caseRotate, {
-      toValue: 1,
-      friction: 8,
-      tension: 30,
-      useNativeDriver: true,
-    }).start();
+    Animated.spring(caseRotate, { toValue: 1, friction: 7, tension: 28, useNativeDriver: true }).start();
     setPhase('open');
   }
 
@@ -89,20 +79,13 @@ export default function EmergencyTab() {
     setTimeLeft(TOTAL_SECONDS);
     let seconds = TOTAL_SECONDS;
     let isInhale = true;
-
-    function breatheCycle() {
-      if (isInhale) {
-        setBreathingText('Breathe In');
-        Animated.timing(breathScale, { toValue: 1.5, duration: BREATHE_IN, useNativeDriver: true }).start();
-      } else {
-        setBreathingText('Breathe Out');
-        Animated.timing(breathScale, { toValue: 1, duration: BREATHE_OUT, useNativeDriver: true }).start();
-      }
+    function cycle() {
+      setBreathingText(isInhale ? 'Breathe In' : 'Breathe Out');
+      Animated.timing(breathScale, { toValue: isInhale ? 1.5 : 1, duration: BREATHE_IN, useNativeDriver: true }).start();
       isInhale = !isInhale;
     }
-
-    breatheCycle();
-    breathingRef.current = setInterval(breatheCycle, BREATHE_IN);
+    cycle();
+    breathingRef.current = setInterval(cycle, BREATHE_IN);
     countdownRef.current = setInterval(() => {
       seconds--;
       setTimeLeft(seconds);
@@ -127,23 +110,12 @@ export default function EmergencyTab() {
     setTimeLeft(TOTAL_SECONDS);
   }
 
-  const formatTime = (s) => {
-    const mins = Math.floor(s / 60);
-    const secs = s % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
+  const fmt = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
   const hasAllah = user?.motivations?.includes('allah');
 
-  const caseRotateInterp = caseRotate.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '-115deg'],
-  });
-
-  const buttonPressScale = buttonPress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 0.94],
-  });
+  const caseRotateInterp = caseRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-115deg'] });
+  const btnScale = buttonPress.interpolate({ inputRange: [0, 1], outputRange: [1, 0.93] });
+  const btnSideH = buttonPress.interpolate({ inputRange: [0, 1], outputRange: [BUTTON_SIZE * 0.22, BUTTON_SIZE * 0.1] });
 
   // ===== COMPLETE =====
   if (phase === 'complete') {
@@ -159,14 +131,8 @@ export default function EmergencyTab() {
           <Text style={styles.completeText}>
             The craving has passed. You stayed in control.{'\n'}That took real strength.
           </Text>
-          {hasAllah && (
-            <Text style={styles.completeAllah}>
-              Allah sees your patience. This resistance is worship.
-            </Text>
-          )}
-          <TouchableOpacity style={styles.closeBtn} onPress={reset}>
-            <Text style={styles.closeBtnText}>Close</Text>
-          </TouchableOpacity>
+          {hasAllah && <Text style={styles.completeAllah}>Allah sees your patience. This resistance is worship.</Text>}
+          <TouchableOpacity style={styles.closeBtn} onPress={reset}><Text style={styles.closeBtnText}>Close</Text></TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -185,88 +151,99 @@ export default function EmergencyTab() {
               <Text style={styles.breatheLabel}>{breathingText}</Text>
             </Animated.View>
           </View>
-          <Text style={styles.timer}>{formatTime(timeLeft)}</Text>
-          <TouchableOpacity style={styles.endBtn} onPress={reset}>
-            <Text style={styles.endBtnText}>End Early</Text>
-          </TouchableOpacity>
+          <Text style={styles.timer}>{fmt(timeLeft)}</Text>
+          <TouchableOpacity style={styles.endBtn} onPress={reset}><Text style={styles.endBtnText}>End Early</Text></TouchableOpacity>
         </Animated.View>
       </SafeAreaView>
     );
   }
 
-  // ===== BUTTON SCENE (top-down view) =====
+  // ===== 3D ANGLED BUTTON SCENE =====
   return (
     <SafeAreaView style={styles.safe}>
       <Animated.View style={[styles.center, { opacity: sceneOpacity }]}>
         <Text style={styles.title}>EMERGENCY</Text>
 
-        <View style={styles.scene}>
-          {/* Outer shadow ring (table surface shadow) */}
-          <View style={styles.outerShadow} />
+        {/* Perspective wrapper — tilts the whole assembly like looking at it on a table */}
+        <View style={styles.perspectiveWrap}>
+          <View style={styles.assemblyWrap}>
 
-          {/* 3D Button — top-down perspective (concentric circles) */}
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={phase === 'open' ? pressButton : undefined}
-            disabled={phase === 'closed'}
-          >
+            {/* ===== HAZARD BASE ===== */}
+            <View style={styles.base}>
+              {/* Hazard stripes */}
+              <View style={styles.baseStripes}>
+                {[...Array(14)].map((_, i) => (
+                  <View key={i} style={[styles.stripe, { backgroundColor: i % 2 === 0 ? '#D97706' : '#292524' }]} />
+                ))}
+              </View>
+              {/* Inner dark platform */}
+              <View style={styles.basePlatform} />
+            </View>
+
+            {/* ===== 3D RED BUTTON ===== */}
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={phase === 'open' ? pressButton : undefined}
+              disabled={phase === 'closed'}
+              style={styles.buttonPos}
+            >
+              <Animated.View style={{
+                alignItems: 'center',
+                transform: [{ scale: phase === 'open' ? Animated.multiply(pulseAnim, btnScale) : btnScale }],
+              }}>
+                {/* Button top face (ellipse from this angle) */}
+                <View style={styles.buttonTop}>
+                  <View style={styles.btnShine1} />
+                  <View style={styles.btnShine2} />
+                </View>
+                {/* Button side (cylinder depth) */}
+                <Animated.View style={[styles.buttonSide, { height: btnSideH }]} />
+                {/* Dark shadow base */}
+                <View style={styles.buttonShadow} />
+              </Animated.View>
+            </TouchableOpacity>
+
+            {/* ===== GLASS CASE ===== */}
             <Animated.View
               style={[
-                styles.buttonOuter,
+                styles.glassCase,
                 {
                   transform: [
-                    { scale: phase === 'open' ? Animated.multiply(pulseAnim, buttonPressScale) : buttonPressScale },
+                    { perspective: 500 },
+                    { rotateX: caseRotateInterp },
                   ],
                 },
               ]}
+              pointerEvents={phase === 'closed' ? 'auto' : 'none'}
             >
-              {/* Dark rim */}
-              <View style={styles.buttonRim}>
-                {/* Red top surface */}
-                <View style={styles.buttonFace}>
-                  {/* Radial highlight (top-down light) */}
-                  <View style={styles.buttonHighlight} />
-                  <View style={styles.buttonHighlight2} />
+              <TouchableOpacity
+                activeOpacity={0.95}
+                onPress={phase === 'closed' ? openCase : undefined}
+                style={styles.glassTouchable}
+              >
+                {/* Front glass panel */}
+                <View style={styles.glassFront}>
+                  <View style={styles.glassShine1} />
+                  <View style={styles.glassShine2} />
                 </View>
-              </View>
+                {/* Left side panel */}
+                <View style={styles.glassSideL} />
+                {/* Right side panel */}
+                <View style={styles.glassSideR} />
+                {/* Top bar / frame */}
+                <View style={styles.glassFrame} />
+                <View style={styles.glassFrameBar} />
+              </TouchableOpacity>
             </Animated.View>
-          </TouchableOpacity>
 
-          {/* Glass case overlay */}
-          <Animated.View
-            style={[
-              styles.glassCase,
-              {
-                transform: [
-                  { perspective: 500 },
-                  { rotateX: caseRotateInterp },
-                ],
-              },
-            ]}
-            pointerEvents={phase === 'closed' ? 'auto' : 'none'}
-          >
-            <TouchableOpacity
-              activeOpacity={0.95}
-              onPress={phase === 'closed' ? openCase : undefined}
-              style={styles.glassTouchable}
-            >
-              {/* Glass dome / box from top-down */}
-              <View style={styles.glassDome}>
-                <View style={styles.glassShine1} />
-                <View style={styles.glassShine2} />
-                <View style={styles.glassEdge} />
-              </View>
-            </TouchableOpacity>
-          </Animated.View>
+          </View>
         </View>
 
         <Text style={styles.infoText}>
-          Cravings go away after 5 minutes.{'\n'}Hit the button and distract yourself.
+          Cravings go away after 2 minutes.{'\n'}Hit the button and distract yourself.
         </Text>
 
-        {phase === 'closed' && (
-          <Text style={styles.hint}>Tap the case to open</Text>
-        )}
+        {phase === 'closed' && <Text style={styles.hint}>Tap the case to open</Text>}
         {phase === 'open' && (
           <Animated.Text style={[styles.hint, styles.hintActive, { opacity: pulseAnim }]}>
             Press the button
@@ -279,146 +256,199 @@ export default function EmergencyTab() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.bg },
-  center: {
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  title: { fontSize: 22, fontWeight: '800', color: Colors.redLight, letterSpacing: 6, marginBottom: 30 },
+
+  // Perspective tilt — looking at it from an angle above
+  perspectiveWrap: {
+    transform: [
+      { perspective: 600 },
+      { rotateX: '20deg' },
+      { rotateZ: '-2deg' },
+    ],
+  },
+  assemblyWrap: {
+    width: BASE_SIZE + 30,
+    height: BASE_SIZE + CASE_H + 10,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+
+  // ===== HAZARD BASE =====
+  base: {
+    width: BASE_SIZE,
+    height: BASE_SIZE * 0.55,
+    borderRadius: 10,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: '#78350F',
+  },
+  baseStripes: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
+    flexDirection: 'row',
   },
-  title: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: Colors.redLight,
-    letterSpacing: 6,
-    marginBottom: 40,
+  stripe: {
+    flex: 1,
+    transform: [{ skewX: '-25deg' }],
+    marginHorizontal: -3,
   },
-
-  // ===== SCENE =====
-  scene: {
-    width: CASE_SIZE + 60,
-    height: CASE_SIZE + 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // Soft shadow underneath
-  outerShadow: {
+  basePlatform: {
     position: 'absolute',
-    width: BUTTON_SIZE + 50,
-    height: BUTTON_SIZE + 50,
-    borderRadius: (BUTTON_SIZE + 50) / 2,
-    backgroundColor: 'rgba(239,68,68,0.06)',
+    top: '15%',
+    left: '12%',
+    right: '12%',
+    bottom: '15%',
+    backgroundColor: '#1c1917',
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#44403c',
   },
 
-  // ===== 3D BUTTON (top-down) =====
-  buttonOuter: {
-    width: BUTTON_SIZE + 20,
-    height: BUTTON_SIZE + 20,
-    borderRadius: (BUTTON_SIZE + 20) / 2,
-    backgroundColor: '#1a0808',
+  // ===== 3D BUTTON =====
+  buttonPos: {
+    position: 'absolute',
+    bottom: BASE_SIZE * 0.55 * 0.25,
+    zIndex: 3,
     alignItems: 'center',
-    justifyContent: 'center',
-    // Outer shadow for depth
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 15,
-    elevation: 12,
   },
-  buttonRim: {
-    width: BUTTON_SIZE + 10,
-    height: BUTTON_SIZE + 10,
-    borderRadius: (BUTTON_SIZE + 10) / 2,
-    backgroundColor: '#7f1d1d',
-    alignItems: 'center',
-    justifyContent: 'center',
-    // Dark ring around the button
-    borderWidth: 3,
-    borderColor: '#450a0a',
-  },
-  buttonFace: {
+  buttonTop: {
     width: BUTTON_SIZE,
-    height: BUTTON_SIZE,
+    height: BUTTON_SIZE * 0.7,
     borderRadius: BUTTON_SIZE / 2,
     backgroundColor: '#ef4444',
     overflow: 'hidden',
-    // Red glow
+    zIndex: 2,
     shadowColor: '#ef4444',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 25,
+    shadowOpacity: 0.7,
+    shadowRadius: 20,
     elevation: 8,
   },
-  // Top-down circular highlight (light source from above-left)
-  buttonHighlight: {
+  btnShine1: {
     position: 'absolute',
-    top: BUTTON_SIZE * 0.12,
-    left: BUTTON_SIZE * 0.15,
-    width: BUTTON_SIZE * 0.45,
-    height: BUTTON_SIZE * 0.35,
-    borderRadius: BUTTON_SIZE * 0.25,
-    backgroundColor: 'rgba(255,255,255,0.22)',
-    transform: [{ rotate: '-20deg' }],
+    top: '10%',
+    left: '15%',
+    width: '45%',
+    height: '35%',
+    borderRadius: 50,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    transform: [{ rotate: '-15deg' }],
   },
-  buttonHighlight2: {
+  btnShine2: {
     position: 'absolute',
-    top: BUTTON_SIZE * 0.2,
-    left: BUTTON_SIZE * 0.22,
-    width: BUTTON_SIZE * 0.25,
-    height: BUTTON_SIZE * 0.12,
-    borderRadius: BUTTON_SIZE * 0.1,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    transform: [{ rotate: '-20deg' }],
+    top: '22%',
+    left: '22%',
+    width: '25%',
+    height: '12%',
+    borderRadius: 30,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    transform: [{ rotate: '-15deg' }],
+  },
+  buttonSide: {
+    width: BUTTON_SIZE,
+    height: BUTTON_SIZE * 0.22,
+    backgroundColor: '#b91c1c',
+    borderBottomLeftRadius: BUTTON_SIZE * 0.15,
+    borderBottomRightRadius: BUTTON_SIZE * 0.15,
+    marginTop: -4,
+    zIndex: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderBottomWidth: 2,
+    borderColor: '#991b1b',
+  },
+  buttonShadow: {
+    width: BUTTON_SIZE + 6,
+    height: 8,
+    backgroundColor: '#450a0a',
+    borderRadius: BUTTON_SIZE / 2,
+    marginTop: -2,
+    opacity: 0.6,
   },
 
-  // ===== GLASS CASE (top-down dome) =====
+  // ===== GLASS CASE =====
   glassCase: {
     position: 'absolute',
-    width: CASE_SIZE,
-    height: CASE_SIZE,
-    borderRadius: CASE_SIZE / 2,
-    zIndex: 10,
+    bottom: BASE_SIZE * 0.55 * 0.2,
+    width: CASE_W,
+    height: CASE_H,
+    zIndex: 5,
     transformOrigin: 'bottom center',
   },
-  glassTouchable: {
+  glassTouchable: { flex: 1 },
+  glassFront: {
     flex: 1,
-  },
-  glassDome: {
-    flex: 1,
-    borderRadius: CASE_SIZE / 2,
-    backgroundColor: 'rgba(200, 230, 250, 0.07)',
+    backgroundColor: 'rgba(150, 200, 220, 0.1)',
     borderWidth: 2,
-    borderColor: 'rgba(200, 230, 250, 0.18)',
+    borderColor: 'rgba(100, 160, 190, 0.3)',
+    borderTopLeftRadius: 6,
+    borderTopRightRadius: 6,
+    borderBottomWidth: 0,
     overflow: 'hidden',
   },
   glassShine1: {
     position: 'absolute',
-    top: CASE_SIZE * 0.1,
-    left: CASE_SIZE * 0.12,
-    width: CASE_SIZE * 0.2,
-    height: CASE_SIZE * 0.45,
-    borderRadius: CASE_SIZE * 0.12,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    transform: [{ rotate: '-25deg' }],
+    top: '8%',
+    left: '10%',
+    width: '18%',
+    height: '55%',
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    transform: [{ skewX: '-5deg' }],
   },
   glassShine2: {
     position: 'absolute',
-    top: CASE_SIZE * 0.15,
-    left: CASE_SIZE * 0.28,
-    width: CASE_SIZE * 0.08,
-    height: CASE_SIZE * 0.3,
-    borderRadius: CASE_SIZE * 0.06,
+    top: '12%',
+    left: '26%',
+    width: '7%',
+    height: '40%',
+    borderRadius: 3,
     backgroundColor: 'rgba(255,255,255,0.06)',
-    transform: [{ rotate: '-25deg' }],
+    transform: [{ skewX: '-5deg' }],
   },
-  glassEdge: {
+  glassSideL: {
     position: 'absolute',
+    left: 0,
+    top: 0,
     bottom: 0,
-    left: CASE_SIZE * 0.1,
-    right: CASE_SIZE * 0.1,
-    height: 3,
-    backgroundColor: 'rgba(200, 230, 250, 0.15)',
-    borderRadius: 2,
+    width: 8,
+    backgroundColor: 'rgba(100, 160, 190, 0.08)',
+    borderTopLeftRadius: 6,
+    borderLeftWidth: 2,
+    borderColor: 'rgba(100, 160, 190, 0.2)',
+  },
+  glassSideR: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 8,
+    backgroundColor: 'rgba(100, 160, 190, 0.08)',
+    borderTopRightRadius: 6,
+    borderRightWidth: 2,
+    borderColor: 'rgba(100, 160, 190, 0.2)',
+  },
+  // Frame bars at top of glass (like the metal frame in the reference)
+  glassFrame: {
+    position: 'absolute',
+    top: 0,
+    left: -2,
+    right: -2,
+    height: 6,
+    backgroundColor: '#475569',
+    borderTopLeftRadius: 6,
+    borderTopRightRadius: 6,
+  },
+  glassFrameBar: {
+    position: 'absolute',
+    top: 0,
+    left: '40%',
+    width: '20%',
+    height: '100%',
+    backgroundColor: 'rgba(71, 85, 105, 0.15)',
+    borderLeftWidth: 2,
+    borderRightWidth: 2,
+    borderColor: 'rgba(71, 85, 105, 0.2)',
   },
 
   // ===== INFO TEXT =====
@@ -427,131 +457,31 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
-    marginTop: 35,
-    paddingHorizontal: 10,
+    marginTop: 30,
   },
-
-  // Hints
-  hint: {
-    color: Colors.textMuted,
-    fontSize: 13,
-    marginTop: 16,
-    letterSpacing: 0.5,
-  },
-  hintActive: {
-    color: Colors.redLight,
-  },
+  hint: { color: Colors.textMuted, fontSize: 13, marginTop: 14, letterSpacing: 0.5 },
+  hintActive: { color: Colors.redLight },
 
   // ===== BREATHING =====
-  breatheHeading: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: Colors.textBright,
-    marginBottom: 8,
-  },
-  breatheSub: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginBottom: 40,
-  },
-  breatheArea: {
-    width: 260,
-    height: 260,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 30,
-  },
+  breatheHeading: { fontSize: 24, fontWeight: '800', color: Colors.textBright, marginBottom: 8 },
+  breatheSub: { fontSize: 14, color: Colors.textSecondary, marginBottom: 40 },
+  breatheArea: { width: 260, height: 260, alignItems: 'center', justifyContent: 'center', marginBottom: 30 },
   breatheCircle: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: Colors.red,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: Colors.red,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 40,
-    elevation: 10,
+    width: 160, height: 160, borderRadius: 80, backgroundColor: Colors.red,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: Colors.red, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 40, elevation: 10,
   },
-  breatheRing: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    borderWidth: 2,
-    borderColor: Colors.redLight,
-    opacity: 0.3,
-  },
-  breatheLabel: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-  },
-  timer: {
-    fontSize: 42,
-    fontWeight: '700',
-    color: Colors.redLight,
-    fontVariant: ['tabular-nums'],
-    marginBottom: 20,
-  },
-  endBtn: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 40,
-  },
-  endBtnText: {
-    color: Colors.textMuted,
-    fontSize: 15,
-  },
+  breatheRing: { position: 'absolute', width: 200, height: 200, borderRadius: 100, borderWidth: 2, borderColor: Colors.redLight, opacity: 0.3 },
+  breatheLabel: { color: '#fff', fontSize: 16, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2 },
+  timer: { fontSize: 42, fontWeight: '700', color: Colors.redLight, fontVariant: ['tabular-nums'], marginBottom: 20 },
+  endBtn: { borderWidth: 1, borderColor: Colors.border, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 40 },
+  endBtnText: { color: Colors.textMuted, fontSize: 15 },
 
   // ===== COMPLETE =====
-  completeCheck: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 3,
-    borderColor: Colors.green,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  completeTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: Colors.green,
-    marginBottom: 12,
-  },
-  completeText: {
-    fontSize: 16,
-    color: Colors.text,
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 12,
-  },
-  completeAllah: {
-    fontSize: 15,
-    color: Colors.purpleLight,
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 20,
-  },
-  closeBtn: {
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 50,
-    marginTop: 10,
-  },
-  closeBtnText: {
-    color: Colors.textBright,
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  completeCheck: { width: 80, height: 80, borderRadius: 40, borderWidth: 3, borderColor: Colors.green, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  completeTitle: { fontSize: 28, fontWeight: '800', color: Colors.green, marginBottom: 12 },
+  completeText: { fontSize: 16, color: Colors.text, textAlign: 'center', lineHeight: 24, marginBottom: 12 },
+  completeAllah: { fontSize: 15, color: Colors.purpleLight, textAlign: 'center', lineHeight: 24, marginBottom: 20 },
+  closeBtn: { backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 50, marginTop: 10 },
+  closeBtnText: { color: Colors.textBright, fontSize: 16, fontWeight: '600' },
 });
