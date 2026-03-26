@@ -18,13 +18,8 @@ const BREATHE_IN = 4000;
 const BREATHE_OUT = 4000;
 const TOTAL_SECONDS = 120;
 
-// Sizes
-const BASE_W = Math.min(SCREEN_W * 0.75, 280);
-const BASE_H = BASE_W * 0.35;
-const BUTTON_W = BASE_W * 0.55;
-const BUTTON_H = BUTTON_W * 0.55;
-const CASE_W = BASE_W * 0.65;
-const CASE_H = BUTTON_H + 40;
+const BUTTON_SIZE = Math.min(SCREEN_W * 0.52, 200);
+const CASE_SIZE = BUTTON_SIZE + 40;
 
 export default function EmergencyTab() {
   const [phase, setPhase] = useState('closed'); // closed | open | breathing | complete
@@ -32,7 +27,6 @@ export default function EmergencyTab() {
   const [timeLeft, setTimeLeft] = useState(TOTAL_SECONDS);
   const [user, setUser] = useState(null);
 
-  // Animations
   const caseRotate = useRef(new Animated.Value(0)).current;
   const buttonPress = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -44,28 +38,21 @@ export default function EmergencyTab() {
   const countdownRef = useRef(null);
   const pulseRef = useRef(null);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadUser();
-    }, [])
-  );
+  useFocusEffect(useCallback(() => { loadUser(); }, []));
 
   async function loadUser() {
     const u = await getCurrentUser();
     setUser(u);
   }
 
-  useEffect(() => {
-    return () => stopBreathing();
-  }, []);
+  useEffect(() => () => stopBreathing(), []);
 
-  // Pulse glow when open
   useEffect(() => {
     if (phase === 'open') {
       pulseRef.current = Animated.loop(
         Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 1.06, duration: 700, useNativeDriver: true }),
-          Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1.04, duration: 800, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
         ])
       );
       pulseRef.current.start();
@@ -81,25 +68,19 @@ export default function EmergencyTab() {
       friction: 8,
       tension: 30,
       useNativeDriver: true,
-    }).start(() => {
-      setPhase('open');
-    });
+    }).start();
     setPhase('open');
   }
 
   function pressButton() {
-    // Animate button press down
     Animated.sequence([
-      Animated.timing(buttonPress, { toValue: 1, duration: 100, useNativeDriver: true }),
-      Animated.timing(buttonPress, { toValue: 0, duration: 100, useNativeDriver: true }),
+      Animated.timing(buttonPress, { toValue: 1, duration: 80, useNativeDriver: true }),
+      Animated.timing(buttonPress, { toValue: 0, duration: 80, useNativeDriver: true }),
     ]).start(() => {
-      // Transition to breathing
       Animated.parallel([
-        Animated.timing(sceneOpacity, { toValue: 0, duration: 400, useNativeDriver: true }),
-        Animated.timing(breatheOpacity, { toValue: 1, duration: 400, delay: 300, useNativeDriver: true }),
-      ]).start(() => {
-        startBreathing();
-      });
+        Animated.timing(sceneOpacity, { toValue: 0, duration: 350, useNativeDriver: true }),
+        Animated.timing(breatheOpacity, { toValue: 1, duration: 350, delay: 250, useNativeDriver: true }),
+      ]).start(() => startBreathing());
     });
   }
 
@@ -112,18 +93,10 @@ export default function EmergencyTab() {
     function breatheCycle() {
       if (isInhale) {
         setBreathingText('Breathe In');
-        Animated.timing(breathScale, {
-          toValue: 1.5,
-          duration: BREATHE_IN,
-          useNativeDriver: true,
-        }).start();
+        Animated.timing(breathScale, { toValue: 1.5, duration: BREATHE_IN, useNativeDriver: true }).start();
       } else {
         setBreathingText('Breathe Out');
-        Animated.timing(breathScale, {
-          toValue: 1,
-          duration: BREATHE_OUT,
-          useNativeDriver: true,
-        }).start();
+        Animated.timing(breathScale, { toValue: 1, duration: BREATHE_OUT, useNativeDriver: true }).start();
       }
       isInhale = !isInhale;
     }
@@ -133,10 +106,7 @@ export default function EmergencyTab() {
     countdownRef.current = setInterval(() => {
       seconds--;
       setTimeLeft(seconds);
-      if (seconds <= 0) {
-        stopBreathing();
-        setPhase('complete');
-      }
+      if (seconds <= 0) { stopBreathing(); setPhase('complete'); }
     }, 1000);
   }
 
@@ -165,20 +135,14 @@ export default function EmergencyTab() {
 
   const hasAllah = user?.motivations?.includes('allah');
 
-  // Case rotates from bottom edge upward (hinge at bottom)
   const caseRotateInterp = caseRotate.interpolate({
     inputRange: [0, 1],
-    outputRange: ['0deg', '-110deg'],
+    outputRange: ['0deg', '-115deg'],
   });
 
-  // Button presses down slightly
-  const buttonPressY = buttonPress.interpolate({
+  const buttonPressScale = buttonPress.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 6],
-  });
-  const buttonShadowH = buttonPress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [BUTTON_H * 0.2, BUTTON_H * 0.08],
+    outputRange: [1, 0.94],
   });
 
   // ===== COMPLETE =====
@@ -186,7 +150,7 @@ export default function EmergencyTab() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
-          <View style={styles.completeCheckCircle}>
+          <View style={styles.completeCheck}>
             <Svg width={48} height={48} viewBox="0 0 24 24">
               <Path d="M5 13L9 17L19 7" stroke={Colors.green} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" fill="none" />
             </Svg>
@@ -200,8 +164,8 @@ export default function EmergencyTab() {
               Allah sees your patience. This resistance is worship.
             </Text>
           )}
-          <TouchableOpacity style={styles.resetBtn} onPress={reset}>
-            <Text style={styles.resetBtnText}>Close</Text>
+          <TouchableOpacity style={styles.closeBtn} onPress={reset}>
+            <Text style={styles.closeBtnText}>Close</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -215,16 +179,13 @@ export default function EmergencyTab() {
         <Animated.View style={[styles.center, { opacity: breatheOpacity }]}>
           <Text style={styles.breatheHeading}>Focus on your breath</Text>
           <Text style={styles.breatheSub}>Follow the circle. Let everything else go.</Text>
-
           <View style={styles.breatheArea}>
-            <Animated.View style={[styles.breatheRingOuter, { transform: [{ scale: breathScale }] }]} />
+            <Animated.View style={[styles.breatheRing, { transform: [{ scale: breathScale }] }]} />
             <Animated.View style={[styles.breatheCircle, { transform: [{ scale: breathScale }] }]}>
               <Text style={styles.breatheLabel}>{breathingText}</Text>
             </Animated.View>
           </View>
-
           <Text style={styles.timer}>{formatTime(timeLeft)}</Text>
-
           <TouchableOpacity style={styles.endBtn} onPress={reset}>
             <Text style={styles.endBtnText}>End Early</Text>
           </TouchableOpacity>
@@ -233,75 +194,51 @@ export default function EmergencyTab() {
     );
   }
 
-  // ===== CLOSED & OPEN — 3D BUTTON WITH GLASS CASE =====
+  // ===== BUTTON SCENE (top-down view) =====
   return (
     <SafeAreaView style={styles.safe}>
       <Animated.View style={[styles.center, { opacity: sceneOpacity }]}>
         <Text style={styles.title}>EMERGENCY</Text>
-        <Text style={styles.subtitle}>
-          {phase === 'closed'
-            ? 'Having a craving? Open the case.'
-            : 'Hit the button. Start breathing.'}
-        </Text>
 
         <View style={styles.scene}>
-          {/* ===== HAZARD BASE ===== */}
-          <View style={styles.baseOuter}>
-            {/* Hazard stripes */}
-            <View style={styles.hazardStripes}>
-              {[...Array(12)].map((_, i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.hazardStripe,
-                    { backgroundColor: i % 2 === 0 ? '#D97706' : '#1a1a1a' },
-                  ]}
-                />
-              ))}
-            </View>
-            {/* Base top surface (dark platform) */}
-            <View style={styles.basePlatform} />
-          </View>
+          {/* Outer shadow ring (table surface shadow) */}
+          <View style={styles.outerShadow} />
 
-          {/* ===== 3D RED BUTTON ===== */}
+          {/* 3D Button — top-down perspective (concentric circles) */}
           <TouchableOpacity
             activeOpacity={0.9}
             onPress={phase === 'open' ? pressButton : undefined}
             disabled={phase === 'closed'}
-            style={styles.buttonArea}
           >
-            {/* Button shadow/base (dark cylinder underneath) */}
-            <Animated.View style={[styles.buttonShadow, { height: buttonShadowH }]} />
-
-            {/* Button cylinder */}
             <Animated.View
               style={[
-                styles.buttonCylinder,
+                styles.buttonOuter,
                 {
                   transform: [
-                    { translateY: buttonPressY },
-                    { scale: phase === 'open' ? pulseAnim : 1 },
+                    { scale: phase === 'open' ? Animated.multiply(pulseAnim, buttonPressScale) : buttonPressScale },
                   ],
                 },
               ]}
             >
-              {/* Top face of button */}
-              <View style={styles.buttonTop}>
-                <View style={styles.buttonShine} />
-                <View style={styles.buttonShine2} />
+              {/* Dark rim */}
+              <View style={styles.buttonRim}>
+                {/* Red top surface */}
+                <View style={styles.buttonFace}>
+                  {/* Radial highlight (top-down light) */}
+                  <View style={styles.buttonHighlight} />
+                  <View style={styles.buttonHighlight2} />
+                </View>
               </View>
-              {/* Side face of button (gives 3D depth) */}
-              <View style={styles.buttonSide} />
             </Animated.View>
           </TouchableOpacity>
 
-          {/* ===== CLEAR GLASS CASE ===== */}
+          {/* Glass case overlay */}
           <Animated.View
             style={[
               styles.glassCase,
               {
                 transform: [
-                  { perspective: 600 },
+                  { perspective: 500 },
                   { rotateX: caseRotateInterp },
                 ],
               },
@@ -309,24 +246,23 @@ export default function EmergencyTab() {
             pointerEvents={phase === 'closed' ? 'auto' : 'none'}
           >
             <TouchableOpacity
-              activeOpacity={0.9}
+              activeOpacity={0.95}
               onPress={phase === 'closed' ? openCase : undefined}
-              style={styles.glassCaseTouch}
+              style={styles.glassTouchable}
             >
-              {/* Glass front panel */}
-              <View style={styles.glassFront}>
-                <View style={styles.glassReflection} />
-                <View style={styles.glassReflection2} />
+              {/* Glass dome / box from top-down */}
+              <View style={styles.glassDome}>
+                <View style={styles.glassShine1} />
+                <View style={styles.glassShine2} />
+                <View style={styles.glassEdge} />
               </View>
-              {/* Glass left side */}
-              <View style={styles.glassSideLeft} />
-              {/* Glass right side */}
-              <View style={styles.glassSideRight} />
-              {/* Glass top */}
-              <View style={styles.glassTop} />
             </TouchableOpacity>
           </Animated.View>
         </View>
+
+        <Text style={styles.infoText}>
+          Cravings go away after 5 minutes.{'\n'}Hit the button and distract yourself.
+        </Text>
 
         {phase === 'closed' && (
           <Text style={styles.hint}>Tap the case to open</Text>
@@ -350,216 +286,157 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '800',
     color: Colors.redLight,
     letterSpacing: 6,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: Colors.textSecondary,
-    textAlign: 'center',
     marginBottom: 40,
-    lineHeight: 22,
   },
 
   // ===== SCENE =====
   scene: {
+    width: CASE_SIZE + 60,
+    height: CASE_SIZE + 60,
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    width: BASE_W + 20,
-    height: BASE_H + BUTTON_H + CASE_H + 30,
+    justifyContent: 'center',
   },
 
-  // ===== HAZARD BASE =====
-  baseOuter: {
-    width: BASE_W,
-    height: BASE_H,
+  // Soft shadow underneath
+  outerShadow: {
     position: 'absolute',
-    bottom: 0,
-  },
-  hazardStripes: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: BASE_H * 0.6,
-    flexDirection: 'row',
-    overflow: 'hidden',
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: '#92400E',
-  },
-  hazardStripe: {
-    flex: 1,
-    transform: [{ skewX: '-20deg' }],
-    marginHorizontal: -2,
-  },
-  basePlatform: {
-    position: 'absolute',
-    top: 0,
-    left: BASE_W * 0.08,
-    right: BASE_W * 0.08,
-    height: BASE_H * 0.5,
-    backgroundColor: '#1a1a1a',
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    borderWidth: 1,
-    borderBottomWidth: 0,
-    borderColor: '#333',
+    width: BUTTON_SIZE + 50,
+    height: BUTTON_SIZE + 50,
+    borderRadius: (BUTTON_SIZE + 50) / 2,
+    backgroundColor: 'rgba(239,68,68,0.06)',
   },
 
-  // ===== 3D BUTTON =====
-  buttonArea: {
-    position: 'absolute',
-    bottom: BASE_H * 0.35,
+  // ===== 3D BUTTON (top-down) =====
+  buttonOuter: {
+    width: BUTTON_SIZE + 20,
+    height: BUTTON_SIZE + 20,
+    borderRadius: (BUTTON_SIZE + 20) / 2,
+    backgroundColor: '#1a0808',
     alignItems: 'center',
-    zIndex: 2,
+    justifyContent: 'center',
+    // Outer shadow for depth
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 15,
+    elevation: 12,
   },
-  buttonShadow: {
-    position: 'absolute',
-    bottom: -4,
-    width: BUTTON_W + 8,
-    height: BUTTON_H * 0.2,
-    backgroundColor: '#5c0a0a',
-    borderBottomLeftRadius: BUTTON_W * 0.3,
-    borderBottomRightRadius: BUTTON_W * 0.3,
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
-  },
-  buttonCylinder: {
+  buttonRim: {
+    width: BUTTON_SIZE + 10,
+    height: BUTTON_SIZE + 10,
+    borderRadius: (BUTTON_SIZE + 10) / 2,
+    backgroundColor: '#7f1d1d',
     alignItems: 'center',
+    justifyContent: 'center',
+    // Dark ring around the button
+    borderWidth: 3,
+    borderColor: '#450a0a',
   },
-  buttonTop: {
-    width: BUTTON_W,
-    height: BUTTON_W * 0.65,
-    borderRadius: BUTTON_W * 0.5,
+  buttonFace: {
+    width: BUTTON_SIZE,
+    height: BUTTON_SIZE,
+    borderRadius: BUTTON_SIZE / 2,
     backgroundColor: '#ef4444',
     overflow: 'hidden',
+    // Red glow
     shadowColor: '#ef4444',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 20,
-    elevation: 10,
+    shadowOpacity: 0.8,
+    shadowRadius: 25,
+    elevation: 8,
   },
-  buttonShine: {
+  // Top-down circular highlight (light source from above-left)
+  buttonHighlight: {
     position: 'absolute',
-    top: 6,
-    left: BUTTON_W * 0.15,
-    width: BUTTON_W * 0.5,
-    height: BUTTON_W * 0.2,
-    borderRadius: BUTTON_W * 0.15,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    transform: [{ rotate: '-10deg' }],
+    top: BUTTON_SIZE * 0.12,
+    left: BUTTON_SIZE * 0.15,
+    width: BUTTON_SIZE * 0.45,
+    height: BUTTON_SIZE * 0.35,
+    borderRadius: BUTTON_SIZE * 0.25,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    transform: [{ rotate: '-20deg' }],
   },
-  buttonShine2: {
+  buttonHighlight2: {
     position: 'absolute',
-    top: BUTTON_W * 0.12,
-    left: BUTTON_W * 0.2,
-    width: BUTTON_W * 0.3,
-    height: BUTTON_W * 0.08,
-    borderRadius: BUTTON_W * 0.05,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    transform: [{ rotate: '-10deg' }],
-  },
-  buttonSide: {
-    width: BUTTON_W,
-    height: BUTTON_H * 0.35,
-    backgroundColor: '#b91c1c',
-    borderBottomLeftRadius: BUTTON_W * 0.15,
-    borderBottomRightRadius: BUTTON_W * 0.15,
-    marginTop: -2,
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#991b1b',
+    top: BUTTON_SIZE * 0.2,
+    left: BUTTON_SIZE * 0.22,
+    width: BUTTON_SIZE * 0.25,
+    height: BUTTON_SIZE * 0.12,
+    borderRadius: BUTTON_SIZE * 0.1,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    transform: [{ rotate: '-20deg' }],
   },
 
-  // ===== GLASS CASE =====
+  // ===== GLASS CASE (top-down dome) =====
   glassCase: {
     position: 'absolute',
-    bottom: BASE_H * 0.35,
-    width: CASE_W,
-    height: CASE_H,
-    zIndex: 5,
+    width: CASE_SIZE,
+    height: CASE_SIZE,
+    borderRadius: CASE_SIZE / 2,
+    zIndex: 10,
     transformOrigin: 'bottom center',
   },
-  glassCaseTouch: {
+  glassTouchable: {
     flex: 1,
   },
-  glassFront: {
+  glassDome: {
     flex: 1,
-    backgroundColor: 'rgba(180, 220, 240, 0.12)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(180, 220, 240, 0.3)',
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    borderBottomWidth: 0,
+    borderRadius: CASE_SIZE / 2,
+    backgroundColor: 'rgba(200, 230, 250, 0.07)',
+    borderWidth: 2,
+    borderColor: 'rgba(200, 230, 250, 0.18)',
     overflow: 'hidden',
   },
-  glassReflection: {
+  glassShine1: {
     position: 'absolute',
-    top: 8,
-    left: 8,
-    width: CASE_W * 0.15,
-    height: CASE_H * 0.6,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 4,
-    transform: [{ skewX: '-5deg' }],
+    top: CASE_SIZE * 0.1,
+    left: CASE_SIZE * 0.12,
+    width: CASE_SIZE * 0.2,
+    height: CASE_SIZE * 0.45,
+    borderRadius: CASE_SIZE * 0.12,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    transform: [{ rotate: '-25deg' }],
   },
-  glassReflection2: {
+  glassShine2: {
     position: 'absolute',
-    top: 12,
-    left: CASE_W * 0.22,
-    width: CASE_W * 0.06,
-    height: CASE_H * 0.4,
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    borderRadius: 3,
-    transform: [{ skewX: '-5deg' }],
+    top: CASE_SIZE * 0.15,
+    left: CASE_SIZE * 0.28,
+    width: CASE_SIZE * 0.08,
+    height: CASE_SIZE * 0.3,
+    borderRadius: CASE_SIZE * 0.06,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    transform: [{ rotate: '-25deg' }],
   },
-  glassSideLeft: {
+  glassEdge: {
     position: 'absolute',
-    left: 0,
     bottom: 0,
-    top: 0,
-    width: 6,
-    backgroundColor: 'rgba(180, 220, 240, 0.08)',
-    borderLeftWidth: 1.5,
-    borderColor: 'rgba(180, 220, 240, 0.2)',
-    borderTopLeftRadius: 8,
+    left: CASE_SIZE * 0.1,
+    right: CASE_SIZE * 0.1,
+    height: 3,
+    backgroundColor: 'rgba(200, 230, 250, 0.15)',
+    borderRadius: 2,
   },
-  glassSideRight: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
-    top: 0,
-    width: 6,
-    backgroundColor: 'rgba(180, 220, 240, 0.08)',
-    borderRightWidth: 1.5,
-    borderColor: 'rgba(180, 220, 240, 0.2)',
-    borderTopRightRadius: 8,
-  },
-  glassTop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 8,
-    backgroundColor: 'rgba(180, 220, 240, 0.15)',
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    borderWidth: 1.5,
-    borderBottomWidth: 0,
-    borderColor: 'rgba(180, 220, 240, 0.25)',
+
+  // ===== INFO TEXT =====
+  infoText: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginTop: 35,
+    paddingHorizontal: 10,
   },
 
   // Hints
   hint: {
     color: Colors.textMuted,
-    fontSize: 14,
-    marginTop: 30,
-    letterSpacing: 1,
+    fontSize: 13,
+    marginTop: 16,
+    letterSpacing: 0.5,
   },
   hintActive: {
     color: Colors.redLight,
@@ -597,7 +474,7 @@ const styles = StyleSheet.create({
     shadowRadius: 40,
     elevation: 10,
   },
-  breatheRingOuter: {
+  breatheRing: {
     position: 'absolute',
     width: 200,
     height: 200,
@@ -633,7 +510,7 @@ const styles = StyleSheet.create({
   },
 
   // ===== COMPLETE =====
-  completeCheckCircle: {
+  completeCheck: {
     width: 80,
     height: 80,
     borderRadius: 40,
@@ -663,7 +540,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: 20,
   },
-  resetBtn: {
+  closeBtn: {
     backgroundColor: Colors.bgCard,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -672,7 +549,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 50,
     marginTop: 10,
   },
-  resetBtnText: {
+  closeBtnText: {
     color: Colors.textBright,
     fontSize: 16,
     fontWeight: '600',
