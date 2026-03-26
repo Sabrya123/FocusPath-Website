@@ -5,6 +5,7 @@ import { Colors } from '../utils/colors';
 import { getCurrentUser, getDayOfYear } from '../utils/storage';
 import { NEGATIVE_FACTS, POSITIVE_FACTS, ALLAH_REMINDERS } from '../data/facts';
 import FactCard from '../components/FactCard';
+import { MosqueIcon } from '../components/Icons';
 
 export default function FactsTab() {
   const [user, setUser] = useState(null);
@@ -42,7 +43,7 @@ export default function FactsTab() {
 
         {hasAllah && (
           <View style={styles.allahCard}>
-            <Text style={styles.allahIcon}>🕌</Text>
+            <View style={styles.allahIcon}><MosqueIcon size={28} /></View>
             <Text style={styles.allahTitle}>DAILY REMINDER</Text>
             <Text style={styles.allahText}>{allahReminder}</Text>
           </View>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Colors } from '../utils/colors';
+import { WarningIcon, SuccessIcon } from './Icons';
 
 export default function FactCard({ type, title, text }) {
   const isNegative = type === 'negative';
@@ -12,7 +13,7 @@ export default function FactCard({ type, title, text }) {
         { borderLeftColor: isNegative ? Colors.red : Colors.green },
       ]}
     >
-      <Text style={styles.icon}>{isNegative ? '⚠️' : '✅'}</Text>
+      <View style={styles.icon}>{isNegative ? <WarningIcon size={28} /> : <SuccessIcon size={28} />}</View>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.text}>{text}</Text>
     </View>
@@ -29,7 +30,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     marginBottom: 12,
   },
-  icon: { fontSize: 28, marginBottom: 8 },
+  icon: { marginBottom: 8 },
   title: {
     fontSize: 12,
     fontWeight: '600',

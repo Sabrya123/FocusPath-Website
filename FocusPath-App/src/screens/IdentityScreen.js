@@ -9,13 +9,154 @@ import {
   Alert,
   Platform,
   ActivityIndicator,
+  Modal,
+  KeyboardAvoidingView,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Colors } from '../utils/colors';
 import { getSession, getUsers, saveUsers } from '../utils/storage';
+import { SparkleIcon, CloseIcon } from '../components/Icons';
+
+// AI Identity Generator
+function generateIdentityFromAnswers(motivators, tenYearVision, nonNegotiables) {
+  const m = motivators.map(s => s.toLowerCase());
+  const vision = tenYearVision.trim();
+  const nn = nonNegotiables;
+
+  // Build opening based on motivators
+  const parts = [];
+
+  const hasFamily = m.some(x => x.includes('family') || x.includes('role model') || x.includes('children'));
+  const hasFaith = m.some(x => x.includes('faith') || x.includes('allah'));
+  const hasHealth = m.some(x => x.includes('health') || x.includes('fitness') || x.includes('longevity') || x.includes('energy'));
+  const hasMoney = m.some(x => x.includes('money') || x.includes('career'));
+  const hasMind = m.some(x => x.includes('mental') || x.includes('clarity') || x.includes('confidence') || x.includes('self-worth'));
+  const hasDiscipline = m.some(x => x.includes('discipline') || x.includes('freedom') || x.includes('self-respect'));
+  const hasRelationships = m.some(x => x.includes('relationship'));
+
+  if (hasFaith) {
+    parts.push('I want to become someone whose actions reflect my faith — someone who honours the body and mind that Allah has given me. I refuse to let nicotine stand between me and my Creator.');
+  } else if (hasFamily) {
+    parts.push('I want to become the kind of person my family can truly be proud of — someone who shows up fully for the people who matter most, not someone chained to a vape.');
+  } else if (hasHealth) {
+    parts.push('I want to become someone who takes their health seriously — someone who respects their body and treats it as the powerful instrument it is, free from the poison of nicotine.');
+  } else if (hasMoney) {
+    parts.push('I want to become someone who is financially free and mentally sharp — someone who invests in themselves and their future instead of burning money on a toxic habit.');
+  } else if (hasMind) {
+    parts.push('I want to become someone with a clear mind and unshakeable confidence — someone who doesn\'t need a chemical to feel okay, because they know their worth without it.');
+  } else if (hasDiscipline) {
+    parts.push('I want to become someone who is truly free — free from cravings, free from dependency, and free from the version of myself that chose comfort over growth.');
+  } else {
+    parts.push('I want to become someone who lives with purpose and intention — someone who has taken back control of their life and refuses to let addiction define them.');
+  }
+
+  // Add secondary motivator sentences
+  if (hasHealth && !m[0]?.includes('health')) {
+    parts.push('I want to breathe deeply without hesitation, to feel my lungs clean and strong, and to give my body the respect it deserves.');
+  }
+  if (hasDiscipline && !m[0]?.includes('discipline')) {
+    parts.push('I want to prove to myself that I have the discipline to overcome anything — that my willpower is stronger than any craving.');
+  }
+  if (hasRelationships) {
+    parts.push('I want to be fully present in my relationships — not stepping away to hit a vape, but being there, truly there, for the people I love.');
+  }
+  if (hasMind && !m[0]?.includes('mental')) {
+    parts.push('I want mental clarity and the kind of confidence that comes from knowing I conquered one of the hardest battles — beating an addiction.');
+  }
+
+  // 10-year vision
+  if (vision.length > 10) {
+    parts.push(`In 10 years, I see myself ${vision.charAt(0).toLowerCase()}${vision.slice(1)}${vision.endsWith('.') ? '' : '.'} Every day without nicotine brings me one step closer to that reality.`);
+  } else {
+    parts.push('I see a future where I am free from addiction, living each day with clarity, energy, and purpose. Every choice I make today shapes the person I will be tomorrow.');
+  }
+
+  // Non-negotiables
+  if (nn.length >= 1) {
+    const nnFormatted = nn.map((n, i) => {
+      if (i === nn.length - 1 && nn.length > 1) return `and ${n.toLowerCase()}`;
+      return n.toLowerCase();
+    }).join(nn.length > 2 ? ', ' : ' ');
+    parts.push(`My non-negotiables are ${nnFormatted} — these are the things I will never sacrifice, no matter how hard it gets. Vaping has no place in the life I am building.`);
+  }
+
+  // Closing based on faith
+  if (hasFaith) {
+    parts.push('I want to stand before Allah knowing I did everything I could to honour the body He entrusted to me. This journey is not just about quitting — it is about becoming who I was always meant to be.');
+  } else if (hasFamily) {
+    parts.push('I want my family to see someone who fought for change and won — not someone controlled by nicotine. I choose to be the example, not the warning.');
+  } else {
+    parts.push('I choose discipline over comfort, growth over stagnation, and freedom over dependency. This is my journey, and I will see it through.');
+  }
+
+  return parts.join(' ');
+}
 
 function getWordCount(text) {
   return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+}
+
+function generateMantra(identityText, motivations) {
+  const lower = identityText.toLowerCase();
+  const mots = (motivations || []).map(m => m.toLowerCase());
+
+  // Faith-based mantras
+  if (mots.includes('allah') || lower.includes('allah') || lower.includes('faith') || lower.includes('deen')) {
+    const options = [
+      "I honour my body as a trust from Allah — I am free.",
+      "My strength comes from Allah, and I choose to be clean.",
+      "I am becoming who Allah created me to be — free and faithful.",
+    ];
+    return options[Math.floor(Math.random() * options.length)];
+  }
+
+  // Family-based mantras
+  if (mots.includes('family') || lower.includes('family') || lower.includes('kids') || lower.includes('children')) {
+    const options = [
+      "I am the person my family deserves — strong, present, and free.",
+      "I quit for them, I stay clean for me.",
+      "My family sees a fighter, not an addict — that is who I am.",
+    ];
+    return options[Math.floor(Math.random() * options.length)];
+  }
+
+  // Health-based mantras
+  if (mots.includes('health') || mots.includes('fitness') || lower.includes('health') || lower.includes('lungs') || lower.includes('body')) {
+    const options = [
+      "My body is my weapon — I refuse to poison it.",
+      "Every breath I take clean makes me stronger than yesterday.",
+      "I choose health over habit, strength over slavery.",
+    ];
+    return options[Math.floor(Math.random() * options.length)];
+  }
+
+  // Discipline / self-respect mantras
+  if (mots.includes('control') || lower.includes('discipline') || lower.includes('self-respect') || lower.includes('control')) {
+    const options = [
+      "I am in control — no chemical decides my day.",
+      "Discipline is my identity, freedom is my reward.",
+      "I am stronger than any craving that comes my way.",
+    ];
+    return options[Math.floor(Math.random() * options.length)];
+  }
+
+  // Money/career mantras
+  if (mots.includes('money') || lower.includes('money') || lower.includes('career') || lower.includes('success')) {
+    const options = [
+      "I invest in my future, not in my addiction.",
+      "Every dollar saved from vaping builds the life I deserve.",
+      "I am building wealth and health — nicotine gets neither.",
+    ];
+    return options[Math.floor(Math.random() * options.length)];
+  }
+
+  // Default mantras
+  const defaults = [
+    "I am becoming the person I was always meant to be — free.",
+    "I choose who I become — and I choose freedom over addiction.",
+    "Today I am stronger than yesterday, and tomorrow I will be unstoppable.",
+  ];
+  return defaults[Math.floor(Math.random() * defaults.length)];
 }
 
 // Profanity / inappropriate content filter
@@ -149,10 +290,70 @@ export default function IdentityScreen({ navigation }) {
   const [isValidating, setIsValidating] = useState(false);
   const [selectedMotivations, setSelectedMotivations] = useState([]);
   const [years, setYears] = useState('');
-  const [quitDate, setQuitDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [firstHabitCategory, setFirstHabitCategory] = useState('');
+  const [firstHabitName, setFirstHabitName] = useState('');
+  const [firstHabitTimer, setFirstHabitTimer] = useState('10');
+
+  // AI Helper state
+  const [showAiHelper, setShowAiHelper] = useState(false);
+  const [aiMotivators, setAiMotivators] = useState([]);
+  const [aiVision, setAiVision] = useState('');
+  const [aiNonNegs, setAiNonNegs] = useState([]);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const wordCount = getWordCount(identity);
+
+  const AI_MOTIVATOR_OPTIONS = [
+    'Family', 'Health', 'Faith / Allah', 'Fitness', 'Money',
+    'Career', 'Self-respect', 'Mental clarity', 'Confidence',
+    'Discipline', 'Freedom', 'Longevity', 'Relationships',
+    'Being a role model', 'Self-worth', 'Energy',
+  ];
+
+  const AI_NON_NEG_OPTIONS = [
+    'My faith', 'My health', 'My family', 'My self-respect',
+    'My mental peace', 'My integrity', 'My discipline',
+    'My future', 'My body', 'My goals', 'My dignity',
+    'My independence', 'My sobriety', 'My children',
+    'My relationship with Allah', 'My word',
+  ];
+
+  function toggleAiMotivator(item) {
+    setAiMotivators(prev =>
+      prev.includes(item) ? prev.filter(m => m !== item) :
+      prev.length < 3 ? [...prev, item] : prev
+    );
+  }
+
+  function toggleAiNonNeg(item) {
+    setAiNonNegs(prev =>
+      prev.includes(item) ? prev.filter(n => n !== item) :
+      prev.length < 3 ? [...prev, item] : prev
+    );
+  }
+
+  function handleAiGenerate() {
+    if (aiMotivators.length === 0) {
+      Alert.alert('Hold on', 'Please select at least one motivator.');
+      return;
+    }
+    if (aiNonNegs.length === 0) {
+      Alert.alert('Hold on', 'Please select at least one non-negotiable.');
+      return;
+    }
+    setIsGenerating(true);
+    setTimeout(() => {
+      const result = generateIdentityFromAnswers(
+        aiMotivators,
+        aiVision,
+        aiNonNegs
+      );
+      setIdentity(result);
+      setIdentityValidation(null);
+      setIsGenerating(false);
+      setShowAiHelper(false);
+    }, 1200);
+  }
 
   function toggleMotivation(key) {
     setSelectedMotivations((prev) =>
@@ -171,9 +372,12 @@ export default function IdentityScreen({ navigation }) {
   }
 
   async function handleSubmit() {
-    const quitDateStr = quitDate.toISOString().split('T')[0];
-    if (!identity.trim() || !years || !quitDateStr) {
+    if (!identity.trim() || !years) {
       Alert.alert('Error', 'Please fill in all fields.');
+      return;
+    }
+    if (!firstHabitCategory || !firstHabitName.trim()) {
+      Alert.alert('Error', 'Please choose a category and name for your first habit.');
       return;
     }
 
@@ -185,14 +389,29 @@ export default function IdentityScreen({ navigation }) {
       return;
     }
 
+    // Generate 1-line mantra from identity
+    const mantra = generateMantra(identity.trim(), selectedMotivations);
+
+    const firstHabit = {
+      name: firstHabitName.trim(),
+      category: firstHabitCategory,
+      timer: parseInt(firstHabitTimer) || 10,
+      done: false,
+    };
+
     const email = await getSession();
     const users = await getUsers();
     users[email] = {
       ...users[email],
       identity: identity.trim(),
+      mantra,
       motivations: selectedMotivations,
       vapingYears: years,
-      quitDate: quitDateStr,
+      habits: [firstHabit],
+      habitsDate: new Date().toDateString(),
+      journeyStartDate: new Date().toISOString(),
+      streakDays: 0,
+      points: 0,
     };
     await saveUsers(users);
     navigation.replace('Dashboard');
@@ -210,9 +429,87 @@ export default function IdentityScreen({ navigation }) {
         journey.
       </Text>
 
+      {/* AI Helper Modal */}
+      <Modal visible={showAiHelper} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalContainer}>
+            <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalScrollContent} keyboardShouldPersistTaps="handled">
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>AI Identity Builder</Text>
+                <TouchableOpacity onPress={() => setShowAiHelper(false)}>
+                  <CloseIcon size={22} color={Colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.modalSubtitle}>Answer these 3 questions and AI will craft your identity statement.</Text>
+
+              <Text style={styles.modalLabel}>1. What are your 3 main motivators?</Text>
+              <Text style={styles.modalHint}>Select up to 3 ({aiMotivators.length}/3)</Text>
+              <View style={styles.chipGrid}>
+                {AI_MOTIVATOR_OPTIONS.map(item => (
+                  <TouchableOpacity
+                    key={item}
+                    style={[styles.chip, aiMotivators.includes(item) && styles.chipActive]}
+                    onPress={() => toggleAiMotivator(item)}
+                  >
+                    <Text style={[styles.chipText, aiMotivators.includes(item) && styles.chipTextActive]}>
+                      {item}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.modalLabel}>2. Where do you see yourself in 10 years?</Text>
+              <Text style={styles.modalHint}>Describe the life you want to be living</Text>
+              <TextInput
+                style={[styles.modalInput, styles.modalTextArea]}
+                placeholder="e.g. Living healthy, running my own business, being a great father..."
+                placeholderTextColor={Colors.textMuted}
+                value={aiVision}
+                onChangeText={setAiVision}
+                multiline
+                numberOfLines={3}
+              />
+
+              <Text style={styles.modalLabel}>3. What are your 3 non-negotiables?</Text>
+              <Text style={styles.modalHint}>Things you will never sacrifice ({aiNonNegs.length}/3)</Text>
+              <View style={styles.chipGrid}>
+                {AI_NON_NEG_OPTIONS.map(item => (
+                  <TouchableOpacity
+                    key={item}
+                    style={[styles.chip, aiNonNegs.includes(item) && styles.chipActive]}
+                    onPress={() => toggleAiNonNeg(item)}
+                  >
+                    <Text style={[styles.chipText, aiNonNegs.includes(item) && styles.chipTextActive]}>
+                      {item}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <TouchableOpacity style={styles.aiGenerateBtn} onPress={handleAiGenerate} disabled={isGenerating}>
+                {isGenerating ? (
+                  <View style={styles.aiGeneratingRow}>
+                    <ActivityIndicator size="small" color="#fff" />
+                    <Text style={styles.aiGenerateBtnText}>  AI is writing your identity...</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.aiGenerateBtnText}>Generate My Identity</Text>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
+
       <View style={styles.card}>
         <Text style={styles.label}>Who do you want to become?</Text>
         <Text style={styles.hint}>Write at least 50 words about the person you want to be.</Text>
+
+        <TouchableOpacity style={styles.aiHelperBtn} onPress={() => setShowAiHelper(true)}>
+          <SparkleIcon size={18} color={Colors.red} />
+          <Text style={styles.aiHelperText}>Need help? Let AI build your identity</Text>
+        </TouchableOpacity>
+
         <TextInput
           style={[styles.input, styles.textArea]}
           placeholder="e.g. I want to become a healthier, more disciplined version of myself. Someone who doesn't rely on nicotine to get through the day..."
@@ -305,42 +602,48 @@ export default function IdentityScreen({ navigation }) {
           ))}
         </View>
 
-        <Text style={styles.label}>
-          When did you quit (or when do you want to start)?
+        <Text style={styles.label}>Choose your first daily habit</Text>
+        <Text style={styles.hint}>
+          Replace vaping with one positive habit. You'll unlock more habits as you progress.
         </Text>
-        {Platform.OS === 'ios' ? (
-          <DateTimePicker
-            value={quitDate}
-            mode="date"
-            display="spinner"
-            onChange={(event, date) => { if (date) setQuitDate(date); }}
-                        style={styles.datePicker}
-            textColor={Colors.textBright}
-            themeVariant="dark"
-          />
-        ) : (
-          <>
+
+        <Text style={[styles.hint, { marginTop: 8, marginBottom: 4 }]}>Category</Text>
+        <View style={styles.optionGrid}>
+          {[
+            { key: 'physical', label: 'Physical' },
+            { key: 'spiritual', label: 'Spiritual' },
+            { key: 'mental', label: 'Mental' },
+          ].map(cat => (
             <TouchableOpacity
-              style={styles.dateBtn}
-              onPress={() => setShowDatePicker(true)}
+              key={cat.key}
+              style={[styles.optionBtn, firstHabitCategory === cat.key && styles.optionBtnActive]}
+              onPress={() => setFirstHabitCategory(cat.key)}
             >
-              <Text style={styles.dateBtnText}>
-                {quitDate.toLocaleDateString()}
+              <Text style={[styles.optionText, firstHabitCategory === cat.key && styles.optionTextActive]}>
+                {cat.label}
               </Text>
             </TouchableOpacity>
-            {showDatePicker && (
-              <DateTimePicker
-                value={quitDate}
-                mode="date"
-                display="default"
-                                onChange={(event, date) => {
-                  setShowDatePicker(false);
-                  if (date) setQuitDate(date);
-                }}
-              />
-            )}
-          </>
-        )}
+          ))}
+        </View>
+
+        <Text style={[styles.hint, { marginTop: 12, marginBottom: 4 }]}>What habit?</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="e.g. Read Quran, Go for a run, Journal..."
+          placeholderTextColor={Colors.textMuted}
+          value={firstHabitName}
+          onChangeText={setFirstHabitName}
+        />
+
+        <Text style={[styles.hint, { marginTop: 12, marginBottom: 4 }]}>Timer (minutes)</Text>
+        <TextInput
+          style={[styles.input, { width: 100 }]}
+          placeholder="10"
+          placeholderTextColor={Colors.textMuted}
+          value={firstHabitTimer}
+          onChangeText={setFirstHabitTimer}
+          keyboardType="number-pad"
+        />
 
         <TouchableOpacity style={styles.btnPrimary} onPress={handleSubmit}>
           <Text style={styles.btnPrimaryText}>Begin My Journey</Text>
@@ -553,6 +856,136 @@ const styles = StyleSheet.create({
   btnPrimaryText: {
     color: '#fff',
     fontSize: 17,
+    fontWeight: '700',
+  },
+  // AI Helper Button
+  aiHelperBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(220, 38, 38, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(220, 38, 38, 0.3)',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+    gap: 8,
+  },
+  aiHelperIcon: {
+    fontSize: 18,
+    color: Colors.red,
+  },
+  aiHelperText: {
+    color: Colors.redLight,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  // AI Helper Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    maxHeight: '90%',
+  },
+  modalScroll: {
+    backgroundColor: Colors.bgCard,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  modalScrollContent: {
+    padding: 24,
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: Colors.textBright,
+  },
+  modalClose: {
+    fontSize: 22,
+    color: Colors.textMuted,
+    padding: 4,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  modalLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.textBright,
+    marginTop: 16,
+    marginBottom: 4,
+  },
+  modalHint: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    marginBottom: 8,
+  },
+  modalInput: {
+    backgroundColor: Colors.bgInput,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    padding: 12,
+    color: Colors.text,
+    fontSize: 15,
+    marginBottom: 8,
+  },
+  modalTextArea: {
+    minHeight: 70,
+    textAlignVertical: 'top',
+  },
+  chipGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 4,
+  },
+  chip: {
+    backgroundColor: Colors.bgInput,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  chipActive: {
+    backgroundColor: Colors.red,
+    borderColor: Colors.red,
+  },
+  chipText: {
+    color: Colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  chipTextActive: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+  aiGenerateBtn: {
+    backgroundColor: Colors.red,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginTop: 24,
+  },
+  aiGeneratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  aiGenerateBtnText: {
+    color: '#fff',
+    fontSize: 16,
     fontWeight: '700',
   },
 });

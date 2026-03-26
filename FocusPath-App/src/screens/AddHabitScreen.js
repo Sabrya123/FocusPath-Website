@@ -13,11 +13,18 @@ import {
 } from 'react-native';
 import { Colors } from '../utils/colors';
 import { validateHabitCategory } from '../utils/habitValidator';
+import { PhysicalIcon, SpiritualIcon, MentalIcon, WarningIcon } from '../components/Icons';
+
+const CATEGORY_ICON_MAP = {
+  physical: PhysicalIcon,
+  spiritual: SpiritualIcon,
+  mental: MentalIcon,
+};
 
 const CATEGORIES = [
-  { key: 'physical', label: 'Physical', icon: '💪', desc: 'Exercise, sports, health' },
-  { key: 'spiritual', label: 'Spiritual', icon: '🤲', desc: 'Prayer, Quran, meditation' },
-  { key: 'mental', label: 'Mental', icon: '🧠', desc: 'Reading, learning, journaling' },
+  { key: 'physical', label: 'Physical', desc: 'Exercise, sports, health' },
+  { key: 'spiritual', label: 'Spiritual', desc: 'Prayer, Quran, meditation' },
+  { key: 'mental', label: 'Mental', desc: 'Reading, learning, journaling' },
 ];
 
 const TIMER_OPTIONS = [
@@ -110,7 +117,7 @@ export default function AddHabitScreen({ navigation, route }) {
                   setMismatchMsg('');
                 }}
               >
-                <Text style={styles.categoryIcon}>{cat.icon}</Text>
+                <View style={styles.categoryIcon}>{React.createElement(CATEGORY_ICON_MAP[cat.key], { size: 28 })}</View>
                 <Text style={[
                   styles.categoryLabel,
                   category === cat.key && styles.categoryLabelActive,
@@ -144,7 +151,10 @@ export default function AddHabitScreen({ navigation, route }) {
           {/* Mismatch warning */}
           {mismatchMsg ? (
             <View style={styles.mismatchBanner}>
-              <Text style={styles.mismatchText}>⚠️ {mismatchMsg}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <WarningIcon size={18} />
+                <Text style={[styles.mismatchText, { flex: 1 }]}>{mismatchMsg}</Text>
+              </View>
             </View>
           ) : null}
 

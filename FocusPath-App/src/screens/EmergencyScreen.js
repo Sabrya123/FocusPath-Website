@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Colors } from '../utils/colors';
 import { REINFORCEMENTS, ALLAH_REMINDERS } from '../data/facts';
+import { StrengthIcon } from '../components/Icons';
 
 function shufflePick(arr, n) {
   const shuffled = [...arr].sort(() => 0.5 - Math.random());
@@ -174,7 +175,7 @@ export default function EmergencyScreen({ route, navigation }) {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
-        <Text style={styles.completeIcon}>💪</Text>
+        <View style={styles.completeIcon}><StrengthIcon size={48} /></View>
         <Text style={styles.completeTitle}>You Made It!</Text>
         <Text style={styles.completeText}>
           The craving has passed. You are in control. Every moment you resist
@@ -300,8 +301,7 @@ const styles = StyleSheet.create({
   },
   // Complete
   completeIcon: {
-    fontSize: 64,
-    textAlign: 'center',
+    alignItems: 'center',
     marginBottom: 16,
   },
   completeTitle: {

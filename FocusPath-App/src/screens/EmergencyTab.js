@@ -11,6 +11,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Colors } from '../utils/colors';
 import { getCurrentUser } from '../utils/storage';
 import { REINFORCEMENTS, ALLAH_REMINDERS } from '../data/facts';
+import { StrengthIcon, AlertIcon } from '../components/Icons';
 
 function shufflePick(arr, n) {
   const shuffled = [...arr].sort(() => 0.5 - Math.random());
@@ -125,7 +126,7 @@ export default function EmergencyTab() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
-          <Text style={styles.readyIcon}>🆘</Text>
+          <View style={styles.readyIcon}><AlertIcon size={64} /></View>
           <Text style={styles.readyTitle}>Emergency Help</Text>
           <Text style={styles.readyText}>
             Feeling the urge to vape? Press the button below for instant support.
@@ -196,7 +197,7 @@ export default function EmergencyTab() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
-        <Text style={styles.completeIcon}>💪</Text>
+        <StrengthIcon size={48} />
         <Text style={styles.completeTitle}>You Made It!</Text>
         <Text style={styles.completeText}>
           The craving has passed. You are in control. Every moment you resist makes you stronger.
@@ -227,7 +228,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 24,
   },
-  readyIcon: { fontSize: 64, marginBottom: 20 },
+  readyIcon: { marginBottom: 20 },
   readyTitle: {
     fontSize: 26,
     fontWeight: '800',
