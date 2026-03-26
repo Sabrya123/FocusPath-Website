@@ -7,6 +7,7 @@ import TimelineList from '../components/TimelineList';
 
 export default function TimelineTab() {
   const [days, setDays] = useState(0);
+  const [vapingYears, setVapingYears] = useState('<1');
 
   useFocusEffect(
     useCallback(() => {
@@ -20,6 +21,9 @@ export default function TimelineTab() {
       const streak = getStreakInfo(user.quitDate);
       setDays(streak.days);
     }
+    if (user?.vapingYears) {
+      setVapingYears(user.vapingYears);
+    }
   }
 
   return (
@@ -28,7 +32,7 @@ export default function TimelineTab() {
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-        <TimelineList currentDays={days} />
+        <TimelineList currentDays={days} vapingYears={vapingYears} />
       </ScrollView>
     </SafeAreaView>
   );

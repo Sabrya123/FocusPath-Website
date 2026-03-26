@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Colors } from '../utils/colors';
-import { TIMELINE_DATA } from '../data/timeline';
+import { getPersonalizedTimeline } from '../data/timeline';
 
 const DIFFICULTY_COLORS = {
   hard: { bg: 'rgba(239,68,68,0.15)', text: '#f87171' },
@@ -10,19 +10,31 @@ const DIFFICULTY_COLORS = {
   victory: { bg: 'rgba(239,68,68,0.2)', text: '#f87171' },
 };
 
-export default function TimelineList({ currentDays }) {
+const VAPING_LABELS = {
+  '<1': 'Less than 1 year',
+  '<6m': 'Less than 6 months',
+  '6-12m': '6-12 months',
+  '1-2': '1-2 years',
+  '2-3': '2-3 years',
+  '3+': '3+ years',
+};
+
+export default function TimelineList({ currentDays, vapingYears = '<1' }) {
+  const timeline = getPersonalizedTimeline(vapingYears);
+  const label = VAPING_LABELS[vapingYears] || vapingYears;
+
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Your Recovery Timeline</Text>
       <Text style={styles.subtitle}>
-        Here's what happens when you stop vaping
+        Personalized for {label} of vaping
       </Text>
 
       <View style={styles.timeline}>
         <View style={styles.line} />
-        {TIMELINE_DATA.map((item, i) => {
-          const nextThreshold = TIMELINE_DATA[i + 1]
-            ? TIMELINE_DATA[i + 1].dayThreshold
+        {timeline.map((item, i) => {
+          const nextThreshold = timeline[i + 1]
+            ? timeline[i + 1].dayThreshold
             : Infinity;
           const isReached = currentDays >= nextThreshold;
           const isCurrent =
@@ -48,6 +60,20 @@ export default function TimelineList({ currentDays }) {
               <Text style={styles.time}>{item.time}</Text>
               <Text style={styles.itemTitle}>{item.title}</Text>
               <Text style={styles.desc}>{item.desc}</Text>
+
+              {item.advice && (isCurrent || !isReached) && (
+                <View style={styles.adviceBox}>
+                  <Text style={styles.adviceLabel}>Advice</Text>
+                  <Text style={styles.adviceText}>{item.advice}</Text>
+                </View>
+              )}
+
+              {isReached && (
+                <View style={styles.completedTag}>
+                  <Text style={styles.completedTagText}>Completed</Text>
+                </View>
+              )}
+
               <View style={[styles.badge, { backgroundColor: dc.bg }]}>
                 <Text style={[styles.badgeText, { color: dc.text }]}>
                   {item.difficultyLabel}
@@ -96,6 +122,7 @@ const styles = StyleSheet.create({
   },
   itemReached: {
     borderColor: Colors.red,
+    opacity: 0.7,
   },
   itemCurrent: {
     borderColor: Colors.redLight,
@@ -141,6 +168,42 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textSecondary,
     lineHeight: 20,
+  },
+  adviceBox: {
+    backgroundColor: 'rgba(239,68,68,0.08)',
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.red,
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 10,
+  },
+  adviceLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.redLight,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  adviceText: {
+    fontSize: 13,
+    color: Colors.text,
+    lineHeight: 19,
+  },
+  completedTag: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
+    backgroundColor: 'rgba(74,222,128,0.15)',
+    paddingVertical: 3,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+  },
+  completedTagText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.green,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   badge: {
     alignSelf: 'flex-start',
