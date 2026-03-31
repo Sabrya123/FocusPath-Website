@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing } from 'react-native';
-import Svg, { Path, Circle, Rect, Line, G, Defs, LinearGradient, Stop, Polygon } from 'react-native-svg';
+import Svg, { Path, Circle, Rect, Line, G, Defs, LinearGradient, Stop, Polygon, Ellipse } from 'react-native-svg';
 import { Colors } from '../utils/colors';
 
 const AnimatedSvg = Animated.createAnimatedComponent(Svg);
@@ -505,110 +505,122 @@ export function FireIcon({ size = 20, color = Colors.red }) {
 
 // ===== RANK ICONS =====
 
-// Grounded - planted seedling with roots
+// Grounded - piece of earth/ground
 export function GroundedRankIcon({ size = 32 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 32 32">
       <Defs>
-        <LinearGradient id="grndGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-          <Stop offset="0%" stopColor="#6B8E23" />
-          <Stop offset="100%" stopColor="#8FBC8F" />
+        <LinearGradient id="grndGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <Stop offset="0%" stopColor="#8B6914" />
+          <Stop offset="40%" stopColor="#6B4E12" />
+          <Stop offset="100%" stopColor="#4A3510" />
         </LinearGradient>
       </Defs>
-      <Path d="M16 26V16" stroke="url(#grndGrad)" strokeWidth={2.5} strokeLinecap="round" />
-      <Path d="M16 18C12 18 9 15 9 11C13 11 16 14 16 18Z" fill="#6B8E23" opacity={0.8} />
-      <Path d="M16 14C20 14 23 11 23 7C19 7 16 10 16 14Z" fill="#8FBC8F" opacity={0.8} />
-      <Path d="M13 26C13 23 16 22 16 26" stroke="#6B8E23" strokeWidth={1.5} strokeLinecap="round" fill="none" opacity={0.5} />
-      <Path d="M19 26C19 23 16 22 16 26" stroke="#6B8E23" strokeWidth={1.5} strokeLinecap="round" fill="none" opacity={0.5} />
-      <Path d="M8 28H24" stroke={Colors.border} strokeWidth={2} strokeLinecap="round" />
+      <Path d="M4 14C4 14 8 12 16 12C24 12 28 14 28 14V24C28 24 24 26 16 26C8 26 4 24 4 24V14Z" fill="url(#grndGrad)" />
+      <Path d="M4 14C4 14 8 12 16 12C24 12 28 14 28 14" stroke="#A0824A" strokeWidth={1.5} fill="none" />
+      <Path d="M4 14C4 14 8 16 16 16C24 16 28 14 28 14" fill="#6B8E23" opacity={0.9} />
+      <Path d="M10 15C10 13 12 12 12 12" stroke="#8FBC8F" strokeWidth={1} strokeLinecap="round" fill="none" opacity={0.6} />
+      <Path d="M20 14C20 12 22 12 22 12" stroke="#8FBC8F" strokeWidth={1} strokeLinecap="round" fill="none" opacity={0.6} />
+      <Circle cx="10" cy="20" r="1.5" fill="#A0824A" opacity={0.4} />
+      <Circle cx="20" cy="22" r="1" fill="#A0824A" opacity={0.3} />
+      <Circle cx="15" cy="21" r="0.8" fill="#A0824A" opacity={0.3} />
     </Svg>
   );
 }
 
-// Awakened - sunrise with opening eye
+// Awakened - sunrise over horizon
 export function AwakenedRankIcon({ size = 32 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 32 32">
       <Defs>
-        <LinearGradient id="awakGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-          <Stop offset="0%" stopColor="#E8A317" />
+        <LinearGradient id="awakGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+          <Stop offset="0%" stopColor="#FF6B35" />
+          <Stop offset="50%" stopColor="#FFB347" />
           <Stop offset="100%" stopColor="#FFD700" />
         </LinearGradient>
       </Defs>
-      <Path d="M4 22H28" stroke={Colors.border} strokeWidth={1.5} strokeLinecap="round" />
-      <Path d="M16 22C20.4 22 24 18.4 24 14" stroke="#FFD700" strokeWidth={2} strokeLinecap="round" fill="none" />
-      <Path d="M16 22C11.6 22 8 18.4 8 14" stroke="#FFD700" strokeWidth={2} strokeLinecap="round" fill="none" />
-      <Circle cx="16" cy="14" r="5" fill="url(#awakGrad)" />
-      <Circle cx="16" cy="14" r="2" fill="#fff" opacity={0.7} />
-      <Path d="M16 6V8" stroke="#FFD700" strokeWidth={2} strokeLinecap="round" />
-      <Path d="M10 8L11 10" stroke="#E8A317" strokeWidth={1.5} strokeLinecap="round" />
-      <Path d="M22 8L21 10" stroke="#E8A317" strokeWidth={1.5} strokeLinecap="round" />
+      <Rect x="2" y="20" width="28" height="8" fill="#2C3E50" opacity={0.3} rx="1" />
+      <Path d="M2 20H30" stroke="#FF6B35" strokeWidth={1.5} strokeLinecap="round" />
+      <Circle cx="16" cy="20" r="7" fill="url(#awakGrad)" />
+      <Rect x="2" y="20" width="28" height="8" fill="#2C3E50" opacity={0.5} rx="1" />
+      <Path d="M16 10V12" stroke="#FFD700" strokeWidth={2} strokeLinecap="round" />
+      <Path d="M9 13L10.5 14.5" stroke="#FFB347" strokeWidth={1.5} strokeLinecap="round" />
+      <Path d="M23 13L21.5 14.5" stroke="#FFB347" strokeWidth={1.5} strokeLinecap="round" />
+      <Path d="M6 18L7.5 18.5" stroke="#FF6B35" strokeWidth={1.5} strokeLinecap="round" />
+      <Path d="M26 18L24.5 18.5" stroke="#FF6B35" strokeWidth={1.5} strokeLinecap="round" />
     </Svg>
   );
 }
 
-// Rising - shooting star / arrow upward
+// Rising - soaring eagle
 export function RisingRankIcon({ size = 32 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 32 32">
       <Defs>
         <LinearGradient id="riseGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-          <Stop offset="0%" stopColor="#FF6347" />
-          <Stop offset="100%" stopColor="#FF8C69" />
+          <Stop offset="0%" stopColor="#5D4037" />
+          <Stop offset="100%" stopColor="#8D6E63" />
         </LinearGradient>
       </Defs>
-      <Path d="M8 26L24 6" stroke="url(#riseGrad)" strokeWidth={2.5} strokeLinecap="round" />
-      <Path d="M18 6H24V12" stroke="#FF8C69" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      <Path d="M6 24L10 22" stroke="#FF6347" strokeWidth={1.5} strokeLinecap="round" opacity={0.5} />
-      <Path d="M10 26L14 24" stroke="#FF6347" strokeWidth={1.5} strokeLinecap="round" opacity={0.3} />
-      <Circle cx="24" cy="6" r="2" fill="#FF8C69" opacity={0.6} />
+      <Path d="M16 10C16 10 8 6 2 8C6 12 10 13 14 12" fill="#8D6E63" opacity={0.8} />
+      <Path d="M16 10C16 10 24 6 30 8C26 12 22 13 18 12" fill="#8D6E63" opacity={0.8} />
+      <Path d="M16 10C16 10 8 8 2 10" stroke="#5D4037" strokeWidth={1.5} fill="none" strokeLinecap="round" />
+      <Path d="M16 10C16 10 24 8 30 10" stroke="#5D4037" strokeWidth={1.5} fill="none" strokeLinecap="round" />
+      <Ellipse cx="16" cy="14" rx="3" ry="4" fill="url(#riseGrad)" />
+      <Path d="M16 18L15 24L16 22L17 24L16 18" fill="#5D4037" />
+      <Circle cx="15" cy="12" r="0.8" fill="#FFD700" />
+      <Circle cx="17" cy="12" r="0.8" fill="#FFD700" />
+      <Path d="M15.5 13.5L16 14.5L16.5 13.5" stroke="#FF6B35" strokeWidth={0.8} strokeLinecap="round" fill="none" />
     </Svg>
   );
 }
 
-// Elevated - mountain peak with flag
+// Elevated - mountain peak with snow cap
 export function ElevatedRankIcon({ size = 32 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 32 32">
       <Defs>
-        <LinearGradient id="elevGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-          <Stop offset="0%" stopColor="#2E8B57" />
-          <Stop offset="100%" stopColor="#3CB371" />
+        <LinearGradient id="elevGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <Stop offset="0%" stopColor="#78909C" />
+          <Stop offset="100%" stopColor="#455A64" />
+        </LinearGradient>
+        <LinearGradient id="elevSnow" x1="0%" y1="0%" x2="0%" y2="100%">
+          <Stop offset="0%" stopColor="#FFFFFF" />
+          <Stop offset="100%" stopColor="#E0E0E0" />
         </LinearGradient>
       </Defs>
-      <Path d="M4 28L16 8L28 28Z" fill="url(#elevGrad)" opacity={0.7} />
-      <Path d="M4 28L16 8L28 28" stroke="#3CB371" strokeWidth={1.5} fill="none" strokeLinejoin="round" />
-      <Path d="M10 28L16 16L22 28" fill="#2E8B57" opacity={0.4} />
-      <Path d="M16 8V4" stroke="#3CB371" strokeWidth={2} strokeLinecap="round" />
-      <Path d="M16 4L22 7L16 7" fill="#3CB371" opacity={0.9} />
-      <Circle cx="16" cy="8" r="1.5" fill="#fff" opacity={0.6} />
+      <Path d="M2 28L16 6L30 28Z" fill="url(#elevGrad)" opacity={0.85} />
+      <Path d="M8 28L22 28L28 18" fill="#37474F" opacity={0.3} />
+      <Path d="M12 14L16 6L20 14C18 16 14 16 12 14Z" fill="url(#elevSnow)" opacity={0.9} />
+      <Path d="M2 28L16 6L30 28" stroke="#78909C" strokeWidth={1.5} fill="none" strokeLinejoin="round" />
+      <Path d="M6 28L12 18L18 28" fill="#546E7A" opacity={0.4} />
     </Svg>
   );
 }
 
-// Radiant - sparkling star
+// Radiant - bright sun with rays
 export function RadiantRankIcon({ size = 32 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 32 32">
       <Defs>
         <LinearGradient id="radGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <Stop offset="0%" stopColor="#9B59B6" />
-          <Stop offset="100%" stopColor="#D4A8E8" />
+          <Stop offset="0%" stopColor="#FF8C00" />
+          <Stop offset="50%" stopColor="#FFD700" />
+          <Stop offset="100%" stopColor="#FFF176" />
         </LinearGradient>
       </Defs>
-      <Path
-        d="M16 2L18.5 12.5L28 10L20 16L28 22L18.5 19.5L16 30L13.5 19.5L4 22L12 16L4 10L13.5 12.5L16 2Z"
-        fill="url(#radGrad)"
-        opacity={0.85}
-      />
-      <Path
-        d="M16 2L18.5 12.5L28 10L20 16L28 22L18.5 19.5L16 30L13.5 19.5L4 22L12 16L4 10L13.5 12.5L16 2Z"
-        stroke="#D4A8E8"
-        strokeWidth={1}
-        fill="none"
-      />
-      <Circle cx="16" cy="16" r="3" fill="#D4A8E8" opacity={0.6} />
-      <Circle cx="16" cy="16" r="1.5" fill="#fff" opacity={0.7} />
+      <Path d="M16 2V6" stroke="#FFD700" strokeWidth={2.5} strokeLinecap="round" />
+      <Path d="M16 26V30" stroke="#FFD700" strokeWidth={2.5} strokeLinecap="round" />
+      <Path d="M2 16H6" stroke="#FFD700" strokeWidth={2.5} strokeLinecap="round" />
+      <Path d="M26 16H30" stroke="#FFD700" strokeWidth={2.5} strokeLinecap="round" />
+      <Path d="M6.1 6.1L8.9 8.9" stroke="#FF8C00" strokeWidth={2} strokeLinecap="round" />
+      <Path d="M23.1 23.1L25.9 25.9" stroke="#FF8C00" strokeWidth={2} strokeLinecap="round" />
+      <Path d="M25.9 6.1L23.1 8.9" stroke="#FF8C00" strokeWidth={2} strokeLinecap="round" />
+      <Path d="M8.9 23.1L6.1 25.9" stroke="#FF8C00" strokeWidth={2} strokeLinecap="round" />
+      <Circle cx="16" cy="16" r="8" fill="url(#radGrad)" />
+      <Circle cx="16" cy="16" r="8" stroke="#FFD700" strokeWidth={1.5} fill="none" />
+      <Circle cx="16" cy="16" r="4" fill="#FFD700" opacity={0.6} />
+      <Circle cx="16" cy="16" r="2" fill="#fff" opacity={0.7} />
     </Svg>
   );
 }

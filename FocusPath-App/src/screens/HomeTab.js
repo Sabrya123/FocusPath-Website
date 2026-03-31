@@ -828,6 +828,7 @@ export default function HomeTab({ navigation }) {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <Text style={styles.dateText}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
         <Text style={styles.greeting}>Unclouded</Text>
 
         <View style={styles.grid}>
@@ -930,6 +931,13 @@ export default function HomeTab({ navigation }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.bg },
   scroll: { padding: 20, paddingBottom: 100 },
+  dateText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    textAlign: 'left',
+    marginBottom: 4,
+  },
   greeting: {
     fontSize: 28,
     fontWeight: '800',
