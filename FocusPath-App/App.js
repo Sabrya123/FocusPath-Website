@@ -7,14 +7,14 @@ import { StatusBar } from 'expo-status-bar';
 import { getCurrentUser } from './src/utils/storage';
 import { Colors } from './src/utils/colors';
 
-import { HomeIcon, TimelineIcon, EmergencyIcon, FactsIcon, ProfileIcon } from './src/components/Icons';
+import { HomeIcon, TimelineIcon, EmergencyIcon, FriendsIcon, ProfileIcon } from './src/components/Icons';
 import LoginScreen from './src/screens/LoginScreen';
 import SignupScreen from './src/screens/SignupScreen';
 import IdentityScreen from './src/screens/IdentityScreen';
 import HomeTab from './src/screens/HomeTab';
 import TimelineTab from './src/screens/TimelineTab';
 import EmergencyTab from './src/screens/EmergencyTab';
-import FactsTab from './src/screens/FactsTab';
+import FriendsTab from './src/screens/FriendsTab';
 import ProfileTab from './src/screens/ProfileTab';
 import AddHabitScreen from './src/screens/AddHabitScreen';
 import HabitSessionScreen from './src/screens/HabitSessionScreen';
@@ -28,7 +28,7 @@ function TabIcon({ label, focused }) {
     Home: <HomeIcon size={24} color={color} focused={focused} />,
     Timeline: <TimelineIcon size={24} color={color} focused={focused} />,
     Emergency: <EmergencyIcon size={28} color={color} focused={focused} />,
-    Facts: <FactsIcon size={24} color={color} focused={focused} />,
+    Friends: <FriendsIcon size={24} color={color} focused={focused} />,
     Profile: <ProfileIcon size={24} color={color} focused={focused} />,
   };
   return (
@@ -65,7 +65,7 @@ function MainTabs() {
         component={EmergencyTab}
         options={{ tabBarLabel: () => null }}
       />
-      <Tab.Screen name="Facts" component={FactsTab} />
+      <Tab.Screen name="Friends" component={FriendsTab} />
       <Tab.Screen name="Profile" component={ProfileTab} />
     </Tab.Navigator>
   );
@@ -93,7 +93,7 @@ export default function App() {
     return (
       <View style={styles.loading}>
         <ActivityIndicator size="large" color={Colors.red} />
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
       </View>
     );
   }
@@ -101,7 +101,7 @@ export default function App() {
   return (
     <NavigationContainer
       theme={{
-        dark: true,
+        dark: false,
         colors: {
           primary: Colors.red,
           background: Colors.bg,
@@ -112,7 +112,7 @@ export default function App() {
         },
       }}
     >
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <Stack.Navigator
         initialRouteName={initialRoute}
         screenOptions={{ headerShown: false }}
@@ -144,12 +144,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tabBar: {
-    backgroundColor: '#111111',
-    borderTopColor: '#2a2a2a',
-    borderTopWidth: 1,
-    height: 85,
-    paddingBottom: 20,
-    paddingTop: 8,
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
+    right: 16,
+    backgroundColor: Colors.bgCard,
+    borderTopWidth: 0,
+    borderRadius: 30,
+    height: 60,
+    paddingBottom: 0,
+    paddingTop: 0,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    shadowColor: '#8eaab8',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   tabLabel: {
     fontSize: 11,

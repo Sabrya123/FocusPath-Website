@@ -13,8 +13,12 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import Svg, { Circle, Rect, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Colors } from '../utils/colors';
-import { getCurrentUser, getSession, updateUser, getUsers } from '../utils/storage';
-import { StarIcon, CheckIcon, CategoryIcon, CloseIcon, DeleteIcon, MedalIcon, StrengthIcon, SparkleIcon, XIcon, RankIcon } from '../components/Icons';
+import { getCurrentUser, getSession, updateUser, getUsers, getDayOfYear } from '../utils/storage';
+import { StarIcon, CheckIcon, CategoryIcon, CloseIcon, DeleteIcon, MedalIcon, StrengthIcon, SparkleIcon, XIcon, RankIcon, FireIcon, MosqueIcon } from '../components/Icons';
+import { NEGATIVE_FACTS, POSITIVE_FACTS, ALLAH_REMINDERS } from '../data/facts';
+import FactCard from '../components/FactCard';
+import { syncProfileToSupabase } from '../utils/friends';
+import { supabase } from '../utils/supabase';
 
 function LockIcon({ size = 18, color = Colors.red }) {
   return (
@@ -87,15 +91,13 @@ const REWARDS = [
   { points: 10000, label: 'Reward 3', description: 'Coming soon...' },
 ];
 
-function StreakCard({ streakDays, points, allDone, onStreakPress }) {
+function ProgressCard({ streakDays, allDone }) {
   const [showDetail, setShowDetail] = useState(false);
-  const [showRewards, setShowRewards] = useState(false);
 
   const milestone = getMilestone(streakDays);
   const progress = Math.min(streakDays / milestone.days, 1);
   const offset = CIRCUMFERENCE * (1 - progress);
   const daysLeft = milestone.days - streakDays;
-  const completedMilestones = getCompletedMilestones(streakDays);
 
   // Big ring for modal
   const BIG_RADIUS = 90;
@@ -105,13 +107,7 @@ function StreakCard({ streakDays, points, allDone, onStreakPress }) {
   return (
     <>
       <TouchableOpacity style={styles.gridCard} onPress={() => setShowDetail(true)} activeOpacity={0.7}>
-        <View style={styles.streakHeader}>
-          <Text style={styles.cardTitle}>Progress</Text>
-          <TouchableOpacity style={styles.pointsBadge} onPress={(e) => { e.stopPropagation && e.stopPropagation(); setShowRewards(true); }}>
-            <StarIcon size={16} />
-            <Text style={styles.pointsText}>{points} pts</Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.cardTitle}>Progress</Text>
         <View style={styles.miniRingWrap}>
           <Svg width={110} height={110} viewBox="0 0 110 110">
             <Defs>
@@ -132,18 +128,10 @@ function StreakCard({ streakDays, points, allDone, onStreakPress }) {
             <Text style={styles.progressPercent}>{Math.round(progress * 100)}%</Text>
             <Text style={styles.miniRingLabel}>{milestone.label}</Text>
           </View>
-          {/* Day streak badge in corner — opens leaderboard */}
-          <TouchableOpacity
-            style={styles.streakBadge}
-            onPress={(e) => { e.stopPropagation && e.stopPropagation(); onStreakPress && onStreakPress(); }}
-          >
-            <Text style={styles.streakBadgeNum}>{streakDays}</Text>
-            <Text style={styles.streakBadgeLabel}>days</Text>
-          </TouchableOpacity>
         </View>
         {allDone ? (
           <View style={styles.completedBanner}>
-            <Text style={styles.completedText}>Affirmation + habits done! +{POINTS_PER_COMPLETION} pts</Text>
+            <Text style={styles.completedText}>All done today!</Text>
           </View>
         ) : (
           <Text style={styles.streakMsg}>{daysLeft} days to {milestone.label}</Text>
@@ -237,78 +225,33 @@ function StreakCard({ streakDays, points, allDone, onStreakPress }) {
         </View>
       </Modal>
 
-      {/* Rewards Modal */}
-      <Modal visible={showRewards} animationType="slide" transparent>
-        <View style={styles.rewardsModalOverlay}>
-          <View style={styles.rewardsModalContent}>
-            <View style={styles.progressModalHeader}>
-              <Text style={styles.progressModalTitle}>Rewards</Text>
-              <TouchableOpacity onPress={() => setShowRewards(false)}>
-                <CloseIcon size={22} color={Colors.textMuted} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.rewardsPointsNum}>{points.toLocaleString()} pts</Text>
-
-            {/* Progress bar */}
-            <View style={styles.rewardsBarContainer}>
-              <View style={styles.rewardsBarTrack}>
-                <View style={[
-                  styles.rewardsBarGlow,
-                  { width: `${Math.min(points / 10000 * 100, 100)}%` }
-                ]} />
-                <View style={[
-                  styles.rewardsBarFill,
-                  { width: `${Math.min(points / 10000 * 100, 100)}%` }
-                ]} />
-              </View>
-
-              {/* Reward markers on the bar */}
-              {REWARDS.map((reward) => {
-                const pos = (reward.points / 10000) * 100;
-                const unlocked = points >= reward.points;
-                return (
-                  <View key={reward.points} style={[styles.rewardMarker, { left: `${pos}%` }]}>
-                    <View style={[styles.rewardMarkerDot, unlocked && styles.rewardMarkerDotUnlocked]}>
-                      {unlocked ? <GiftIcon size={16} /> : <LockIcon size={16} color={Colors.textMuted} />}
-                    </View>
-                    <Text style={[styles.rewardMarkerPts, unlocked && styles.rewardMarkerPtsUnlocked]}>
-                      {reward.points >= 1000 ? `${reward.points / 1000}k` : reward.points}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
-
-            {/* Reward details */}
-            <View style={styles.rewardsList}>
-              {REWARDS.map((reward) => {
-                const unlocked = points >= reward.points;
-                const needed = Math.max(0, reward.points - points);
-                return (
-                  <View key={reward.points} style={[styles.rewardDetailRow, unlocked && styles.rewardDetailRowUnlocked]}>
-                    <View style={styles.rewardDetailIconWrap}>
-                      {unlocked ? <GiftIcon size={22} /> : <LockIcon size={22} color={Colors.textMuted} />}
-                    </View>
-                    <View style={styles.rewardDetailInfo}>
-                      <Text style={[styles.rewardDetailName, unlocked && styles.rewardDetailNameUnlocked]}>
-                        {reward.label}
-                      </Text>
-                      <Text style={styles.rewardDetailDesc}>
-                        {unlocked ? 'Unlocked!' : `${needed.toLocaleString()} pts to go`}
-                      </Text>
-                    </View>
-                    <Text style={[styles.rewardDetailPts, unlocked && styles.rewardDetailPtsUnlocked]}>
-                      {reward.points.toLocaleString()}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
-          </View>
-        </View>
-      </Modal>
     </>
+  );
+}
+
+function PointsStatsCard({ points, onPress }) {
+  return (
+    <TouchableOpacity style={[styles.gridCard, styles.topRightCard]} onPress={onPress} activeOpacity={0.7}>
+      <Text style={styles.cardTitle}>Points</Text>
+      <View style={styles.pointsDisplayRow}>
+        <StarIcon size={20} />
+        <Text style={styles.pointsDisplayNum}>{points.toLocaleString()}</Text>
+      </View>
+      <Text style={styles.pointsDisplayLabel}>pts earned</Text>
+    </TouchableOpacity>
+  );
+}
+
+function StreakStatsCard({ streakDays, onPress }) {
+  return (
+    <TouchableOpacity style={[styles.gridCard, styles.topRightCard]} onPress={onPress} activeOpacity={0.7}>
+      <Text style={styles.cardTitle}>Streak</Text>
+      <View style={styles.streakDisplayRow}>
+        <FireIcon size={24} />
+        <Text style={styles.streakDisplayNum}>{streakDays}</Text>
+      </View>
+      <Text style={styles.streakDisplayLabel}>day{streakDays !== 1 ? 's' : ''} strong</Text>
+    </TouchableOpacity>
   );
 }
 
@@ -389,12 +332,12 @@ function HabitBlock({ habits, onStart, onDelete, onPressAdd, canAddHabit, maxHab
 }
 
 const ALL_RANKS = [
-  { name: 'Beginner', minPoints: 0 },
-  { name: 'Fighter', minPoints: 200 },
-  { name: 'Champion', minPoints: 500 },
-  { name: 'Warrior', minPoints: 1000 },
-  { name: 'Legend', minPoints: 2000 },
-  { name: 'UNCLOUDED', minPoints: 5000 },
+  { name: 'Grounded', vibe: "You've planted your feet and made the choice to start.", minPoints: 0 },
+  { name: 'Awakened', vibe: 'The "fog" is lifting, and you\'re starting to see the benefits of focus.', minPoints: 200 },
+  { name: 'Rising', vibe: "You're gaining momentum and building strength in your new habits.", minPoints: 500 },
+  { name: 'Elevated', vibe: "You've climbed above the initial struggle and are looking down at how far you've come.", minPoints: 1000 },
+  { name: 'Radiant', vibe: "Your mind is sharp, your spirit is strong, and you're helping others climb.", minPoints: 2000 },
+  { name: 'Unclouded', vibe: 'The Ultimate Goal. Total clarity, peace, and absolute focus on what matters.', minPoints: 5000 },
 ];
 
 function getRank(points) {
@@ -418,53 +361,56 @@ function RanksModal({ visible, onClose, points }) {
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>All Ranks</Text>
+            <Text style={styles.modalTitle}>The 6 Ranks of Ascension</Text>
             <TouchableOpacity onPress={onClose} style={styles.modalClose}>
               <Text style={styles.modalCloseText}>✕</Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.currentRankBanner}>
-            <View style={styles.currentRankIcon}><RankIcon rank={currentRank.name} size={56} /></View>
-            <Text style={styles.currentRankName}>{currentRank.name}</Text>
-            <Text style={styles.currentRankPts}>{points} pts</Text>
-          </View>
-
-          {nextRank && (
-            <View style={styles.progressSection}>
-              <View style={styles.progressLabels}>
-                <Text style={styles.progressFrom}>{currentRank.name}</Text>
-                <Text style={styles.progressTo}>{nextRank.name}</Text>
-              </View>
-              <View style={styles.progressBarBg}>
-                <View style={[styles.progressBarFill, { width: `${Math.min(progressInRank * 100, 100)}%` }]} />
-              </View>
-              <Text style={styles.progressPts}>
-                {nextRank.minPoints - points} pts to {nextRank.name}
-              </Text>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <View style={styles.currentRankBanner}>
+              <View style={styles.currentRankIcon}><RankIcon rank={currentRank.name} size={56} /></View>
+              <Text style={styles.currentRankName}>{currentRank.name}</Text>
+              <Text style={styles.currentRankPts}>{points} pts</Text>
             </View>
-          )}
 
-          <View style={styles.ranksList}>
-            {ALL_RANKS.map((r, i) => {
-              const unlocked = i <= currentIndex;
-              const isCurrent = i === currentIndex;
-              return (
-                <View key={r.name} style={[styles.rankRow, isCurrent && styles.rankRowCurrent]}>
-                  <View style={styles.rankRowIcon}><RankIcon rank={r.name} size={28} /></View>
-                  <View style={styles.rankRowInfo}>
-                    <Text style={[styles.rankRowName, unlocked && styles.rankRowNameUnlocked, isCurrent && styles.rankRowNameCurrent]}>
-                      {r.name}
-                    </Text>
-                    <Text style={styles.rankRowPts}>{r.minPoints} pts</Text>
-                  </View>
-                  {unlocked && (
-                    <Text style={styles.rankRowCheck}>✓</Text>
-                  )}
+            {nextRank && (
+              <View style={styles.progressSection}>
+                <View style={styles.progressLabels}>
+                  <Text style={styles.progressFrom}>{currentRank.name}</Text>
+                  <Text style={styles.progressTo}>{nextRank.name}</Text>
                 </View>
-              );
-            })}
-          </View>
+                <View style={styles.progressBarBg}>
+                  <View style={[styles.progressBarFill, { width: `${Math.min(progressInRank * 100, 100)}%` }]} />
+                </View>
+                <Text style={styles.progressPts}>
+                  {nextRank.minPoints - points} pts to {nextRank.name}
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.ranksList}>
+              {ALL_RANKS.map((r, i) => {
+                const unlocked = i <= currentIndex;
+                const isCurrent = i === currentIndex;
+                return (
+                  <View key={r.name} style={[styles.rankRow, isCurrent && styles.rankRowCurrent]}>
+                    <View style={styles.rankRowIcon}><RankIcon rank={r.name} size={28} /></View>
+                    <View style={styles.rankRowInfo}>
+                      <Text style={[styles.rankRowName, unlocked && styles.rankRowNameUnlocked, isCurrent && styles.rankRowNameCurrent]}>
+                        {r.name}
+                      </Text>
+                      <Text style={styles.rankRowVibe}>{r.vibe}</Text>
+                      <Text style={styles.rankRowPts}>{r.minPoints} pts</Text>
+                    </View>
+                    {unlocked && (
+                      <Text style={styles.rankRowCheck}>✓</Text>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -604,6 +550,7 @@ export default function HomeTab({ navigation }) {
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [leaderboard, setLeaderboard] = useState([]);
   const [userRank, setUserRank] = useState(0);
+  const [hasAllah, setHasAllah] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -621,6 +568,13 @@ export default function HomeTab({ navigation }) {
     setMantra(user.mantra || '');
     setPoints(user.points || 0);
     setStreakDays(user.streakDays || 0);
+    setHasAllah(user.motivations?.includes('allah') || false);
+
+    // Sync profile to Supabase for friends feature
+    try {
+      const { data: { user: sbUser } } = await supabase.auth.getUser();
+      if (sbUser) syncProfileToSupabase(sbUser.id, user);
+    } catch (e) {}
 
     // Calculate journey month (how many months since they started)
     if (user.journeyStartDate) {
@@ -877,7 +831,17 @@ export default function HomeTab({ navigation }) {
         <Text style={styles.greeting}>Unclouded</Text>
 
         <View style={styles.grid}>
-          <StreakCard streakDays={streakDays} points={points} allDone={allDone} onStreakPress={() => setShowLeaderboard(true)} />
+          {/* Top row: Progress left, Points + Streak right */}
+          <View style={styles.topRow}>
+            <View style={styles.topLeft}>
+              <ProgressCard streakDays={streakDays} allDone={allDone} />
+            </View>
+            <View style={styles.topRight}>
+              <PointsStatsCard points={points} onPress={() => setShowRanks(true)} />
+              <StreakStatsCard streakDays={streakDays} onPress={() => setShowLeaderboard(true)} />
+            </View>
+          </View>
+
           <MantraCard
             mantra={mantra}
             mantraInput={mantraInput}
@@ -895,6 +859,19 @@ export default function HomeTab({ navigation }) {
             maxHabits={maxHabits}
             journeyMonth={journeyMonth}
           />
+
+          {/* Daily Facts — under habits */}
+          <Text style={styles.factsHeading}>Daily Facts</Text>
+          <FactCard type="negative" title="Daily Vaping Fact" text={NEGATIVE_FACTS[getDayOfYear() % NEGATIVE_FACTS.length]} />
+          <FactCard type="positive" title="Daily Quitting Win" text={POSITIVE_FACTS[getDayOfYear() % POSITIVE_FACTS.length]} />
+          {hasAllah && (
+            <View style={styles.allahCard}>
+              <View style={styles.allahIconWrap}><MosqueIcon size={28} /></View>
+              <Text style={styles.allahTitle}>DAILY REMINDER</Text>
+              <Text style={styles.allahText}>{ALLAH_REMINDERS[getDayOfYear() % ALLAH_REMINDERS.length]}</Text>
+            </View>
+          )}
+
           <PointsInfoCard points={points} streakDays={streakDays} onPress={() => setShowRanks(true)} />
           <RanksModal visible={showRanks} onClose={() => setShowRanks(false)} points={points} />
           <MotivationCard identity={identity} />
@@ -952,16 +929,66 @@ export default function HomeTab({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.bg },
-  scroll: { padding: 20, paddingBottom: 40 },
+  scroll: { padding: 20, paddingBottom: 100 },
   greeting: {
     fontSize: 28,
     fontWeight: '800',
-    color: Colors.textBright,
+    color: '#A8D8EA',
     marginBottom: 20,
     textAlign: 'center',
   },
   grid: {
     gap: 16,
+  },
+  topRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  topLeft: {
+    flex: 3,
+  },
+  topRight: {
+    flex: 2,
+    gap: 12,
+  },
+  topRightCard: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+  },
+  pointsDisplayRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+  },
+  pointsDisplayNum: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: Colors.textBright,
+  },
+  pointsDisplayLabel: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  streakDisplayRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+  },
+  streakDisplayNum: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: Colors.red,
+  },
+  streakDisplayLabel: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 2,
   },
   gridCard: {
     backgroundColor: Colors.bgCard,
@@ -1236,7 +1263,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     height: '100%',
     borderRadius: 7,
-    backgroundColor: 'rgba(239, 68, 68, 0.3)',
+    backgroundColor: 'rgba(91, 168, 200, 0.3)',
     top: 0,
     left: 0,
   },
@@ -1618,7 +1645,7 @@ const styles = StyleSheet.create({
   },
   rankRowCurrent: {
     borderColor: Colors.red,
-    backgroundColor: '#1a0a0a',
+    backgroundColor: Colors.bgInput,
   },
   rankRowIcon: {
     width: 28,
@@ -1637,6 +1664,12 @@ const styles = StyleSheet.create({
   },
   rankRowNameCurrent: {
     color: Colors.redLight,
+  },
+  rankRowVibe: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 2,
+    lineHeight: 16,
   },
   rankRowPts: {
     fontSize: 12,
@@ -1861,5 +1894,37 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: 'rgba(255,255,255,0.7)',
     marginTop: -2,
+  },
+  factsHeading: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.textBright,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  allahCard: {
+    backgroundColor: Colors.bgCard,
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.purple,
+    alignItems: 'center',
+  },
+  allahIconWrap: { marginBottom: 8 },
+  allahTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.purple,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  allahText: {
+    fontSize: 15,
+    color: Colors.text,
+    lineHeight: 24,
+    textAlign: 'center',
   },
 });

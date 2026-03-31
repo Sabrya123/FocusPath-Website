@@ -8,20 +8,18 @@ import {
   SafeAreaView,
   Dimensions,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Polygon, Rect, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors } from '../utils/colors';
 import { getCurrentUser } from '../utils/storage';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const BREATHE_IN = 4000;
-const BREATHE_OUT = 4000;
 const TOTAL_SECONDS = 120;
 
-const BASE_SIZE = Math.min(SCREEN_W * 0.6, 230);
-const BUTTON_SIZE = BASE_SIZE * 0.58;
-const CASE_W = BASE_SIZE * 0.7;
-const CASE_H = BUTTON_SIZE * 1.1;
+// Canvas size for the SVG
+const W = Math.min(SCREEN_W * 0.88, 360);
+const H = W * 1.15;
 
 export default function EmergencyTab() {
   const [phase, setPhase] = useState('closed');
@@ -29,43 +27,28 @@ export default function EmergencyTab() {
   const [timeLeft, setTimeLeft] = useState(TOTAL_SECONDS);
   const [user, setUser] = useState(null);
 
-  const caseRotate = useRef(new Animated.Value(0)).current;
+  const caseAnim = useRef(new Animated.Value(0)).current;
   const buttonPress = useRef(new Animated.Value(0)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
   const breathScale = useRef(new Animated.Value(1)).current;
   const sceneOpacity = useRef(new Animated.Value(1)).current;
   const breatheOpacity = useRef(new Animated.Value(0)).current;
 
   const breathingRef = useRef(null);
   const countdownRef = useRef(null);
-  const pulseRef = useRef(null);
 
   useFocusEffect(useCallback(() => { loadUser(); }, []));
   async function loadUser() { setUser(await getCurrentUser()); }
   useEffect(() => () => stopBreathing(), []);
 
-  useEffect(() => {
-    if (phase === 'open') {
-      pulseRef.current = Animated.loop(Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.05, duration: 700, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
-      ]));
-      pulseRef.current.start();
-    } else {
-      if (pulseRef.current) pulseRef.current.stop();
-      pulseAnim.setValue(1);
-    }
-  }, [phase]);
-
   function openCase() {
-    Animated.spring(caseRotate, { toValue: 1, friction: 7, tension: 28, useNativeDriver: true }).start();
+    Animated.spring(caseAnim, { toValue: 1, friction: 9, tension: 18, useNativeDriver: true }).start();
     setPhase('open');
   }
 
   function pressButton() {
     Animated.sequence([
-      Animated.timing(buttonPress, { toValue: 1, duration: 80, useNativeDriver: true }),
-      Animated.timing(buttonPress, { toValue: 0, duration: 80, useNativeDriver: true }),
+      Animated.timing(buttonPress, { toValue: 1, duration: 100, useNativeDriver: true }),
+      Animated.timing(buttonPress, { toValue: 0, duration: 140, useNativeDriver: true }),
     ]).start(() => {
       Animated.parallel([
         Animated.timing(sceneOpacity, { toValue: 0, duration: 350, useNativeDriver: true }),
@@ -100,9 +83,8 @@ export default function EmergencyTab() {
 
   function reset() {
     stopBreathing();
-    caseRotate.setValue(0);
+    caseAnim.setValue(0);
     buttonPress.setValue(0);
-    pulseAnim.setValue(1);
     breathScale.setValue(1);
     sceneOpacity.setValue(1);
     breatheOpacity.setValue(0);
@@ -113,11 +95,10 @@ export default function EmergencyTab() {
   const fmt = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
   const hasAllah = user?.motivations?.includes('allah');
 
-  const caseRotateInterp = caseRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-115deg'] });
-  const btnScale = buttonPress.interpolate({ inputRange: [0, 1], outputRange: [1, 0.93] });
-  const btnSideH = buttonPress.interpolate({ inputRange: [0, 1], outputRange: [BUTTON_SIZE * 0.22, BUTTON_SIZE * 0.1] });
+  const btnTopScale = buttonPress.interpolate({ inputRange: [0, 1], outputRange: [1, 0.95] });
+  const btnSideScale = buttonPress.interpolate({ inputRange: [0, 1], outputRange: [1, 0.35] });
+  const caseSwing = caseAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-140deg'] });
 
-  // ===== COMPLETE =====
   if (phase === 'complete') {
     return (
       <SafeAreaView style={styles.safe}>
@@ -138,7 +119,6 @@ export default function EmergencyTab() {
     );
   }
 
-  // ===== BREATHING =====
   if (phase === 'breathing') {
     return (
       <SafeAreaView style={styles.safe}>
@@ -158,311 +138,383 @@ export default function EmergencyTab() {
     );
   }
 
-  // ===== 3D ANGLED BUTTON SCENE =====
+  // ============================================
+  // ISOMETRIC COORDINATES for the platform
+  // ============================================
+  // The platform is drawn in SVG as a 3D box.
+  // Top face is a parallelogram, front face below it.
+  const cx = W / 2;
+  const topY = H * 0.22;    // where top face starts
+  const topW = W * 0.82;    // width of top face
+  const topH = W * 0.52;    // depth of top face (foreshortened)
+  const frontH = W * 0.16;  // front face height (thickness)
+  const stripeW = topW * 0.11; // hazard stripe width
+  const skew = W * 0.06;    // how much the top face skews for perspective
+
+  // Top face corners (trapezoid — wider at bottom, narrower at top)
+  const tl = { x: cx - topW / 2 + skew, y: topY };
+  const tr = { x: cx + topW / 2 - skew, y: topY };
+  const br = { x: cx + topW / 2, y: topY + topH };
+  const bl = { x: cx - topW / 2, y: topY + topH };
+
+  // Front face (below top face bottom edge)
+  const fbl = { x: bl.x, y: bl.y + frontH };
+  const fbr = { x: br.x, y: br.y + frontH };
+
+  // Inner platform (dark area)
+  const inl = lerp(tl, bl, stripeW / topH);
+  const inr = lerp(tr, br, stripeW / topH);
+  const inbl2 = lerp(bl, tl, stripeW / topH);
+  const inbr2 = lerp(br, tr, stripeW / topH);
+  // Also inset horizontally
+  const innerTL = offsetH(inl, inr, stripeW / topW);
+  const innerTR = offsetH(inr, inl, stripeW / topW);
+  const innerBL = offsetH(inbl2, inbr2, stripeW / topW);
+  const innerBR = offsetH(inbr2, inbl2, stripeW / topW);
+
+  // Button center on top face
+  const btnCx = cx;
+  const btnCy = topY + topH * 0.48;
+  const btnRx = topW * 0.22;
+  const btnRy = topH * 0.22;
+  const btnSideH2 = W * 0.08;
+
+  // Glass case dimensions on top face
+  const gw = topW * 0.42;
+  const gh = topH * 0.56;
+  const gfh = topH * 0.48; // glass front panel height
+  const gth = topH * 0.18; // glass top panel depth
+
+  // Generate hazard stripe polygons for top face edges
+  const topStripes = generateStripes(tl, tr, bl, br, stripeW, 14);
+  // Front face stripes
+  const frontStripes = generateFrontStripes(bl, br, fbl, fbr, 14);
+
   return (
     <SafeAreaView style={styles.safe}>
       <Animated.View style={[styles.center, { opacity: sceneOpacity }]}>
         <Text style={styles.title}>EMERGENCY</Text>
 
-        {/* Perspective wrapper — tilts the whole assembly like looking at it on a table */}
-        <View style={styles.perspectiveWrap}>
-          <View style={styles.assemblyWrap}>
+        <View style={styles.scene}>
+          {/* SVG draws the 3D platform */}
+          <Svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+            <Defs>
+              <LinearGradient id="btnGrad" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor="#f87171" />
+                <Stop offset="0.4" stopColor="#ef4444" />
+                <Stop offset="1" stopColor="#dc2626" />
+              </LinearGradient>
+              <LinearGradient id="btnSide" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor="#b91c1c" />
+                <Stop offset="1" stopColor="#7f1d1d" />
+              </LinearGradient>
+              <LinearGradient id="frontGrad" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor="#2d3a4a" />
+                <Stop offset="1" stopColor="#1a2332" />
+              </LinearGradient>
+              <LinearGradient id="glassGrad" x1="0" y1="0" x2="0.3" y2="1">
+                <Stop offset="0" stopColor="rgba(180,220,245,0.18)" />
+                <Stop offset="1" stopColor="rgba(140,200,235,0.06)" />
+              </LinearGradient>
+              <LinearGradient id="glassSide" x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0" stopColor="rgba(160,210,240,0.12)" />
+                <Stop offset="1" stopColor="rgba(120,190,225,0.04)" />
+              </LinearGradient>
+            </Defs>
 
-            {/* ===== HAZARD BASE ===== */}
-            <View style={styles.base}>
-              {/* Hazard stripes */}
-              <View style={styles.baseStripes}>
-                {[...Array(14)].map((_, i) => (
-                  <View key={i} style={[styles.stripe, { backgroundColor: i % 2 === 0 ? '#D97706' : '#292524' }]} />
-                ))}
-              </View>
-              {/* Inner dark platform */}
-              <View style={styles.basePlatform} />
-            </View>
+            {/* ===== FRONT FACE ===== */}
+            <Polygon
+              points={`${bl.x},${bl.y} ${br.x},${br.y} ${fbr.x},${fbr.y} ${fbl.x},${fbl.y}`}
+              fill="url(#frontGrad)"
+              stroke="#151d2b"
+              strokeWidth={1.5}
+            />
+            {/* Front face hazard stripes */}
+            {frontStripes.map((pts, i) => (
+              <Polygon key={`fs${i}`} points={pts} fill={i % 2 === 0 ? '#ca8a04' : '#1c1917'} />
+            ))}
 
-            {/* ===== 3D RED BUTTON ===== */}
+            {/* ===== TOP FACE ===== */}
+            <Polygon
+              points={`${tl.x},${tl.y} ${tr.x},${tr.y} ${br.x},${br.y} ${bl.x},${bl.y}`}
+              fill="#374151"
+              stroke="#1f2937"
+              strokeWidth={1.5}
+            />
+
+            {/* Top face hazard stripes */}
+            {topStripes.map((pts, i) => (
+              <Polygon key={`ts${i}`} points={pts} fill={i % 2 === 0 ? '#eab308' : '#292524'} />
+            ))}
+
+            {/* Inner dark platform */}
+            <Polygon
+              points={`${innerTL.x},${innerTL.y} ${innerTR.x},${innerTR.y} ${innerBR.x},${innerBR.y} ${innerBL.x},${innerBL.y}`}
+              fill="#1a2234"
+              stroke="#2a3650"
+              strokeWidth={1.5}
+            />
+
+            {/* ===== BUTTON SHADOW ===== */}
+            <Rect
+              x={btnCx - btnRx * 1.05}
+              y={btnCy + btnSideH2 - 2}
+              rx={btnRx}
+              ry={btnRy * 0.4}
+              width={btnRx * 2.1}
+              height={btnRy * 0.8}
+              fill="rgba(0,0,0,0.3)"
+            />
+
+            {/* ===== BUTTON CYLINDER SIDE ===== */}
+            <Rect
+              x={btnCx - btnRx}
+              y={btnCy}
+              rx={4}
+              ry={0}
+              width={btnRx * 2}
+              height={btnSideH2}
+              fill="url(#btnSide)"
+              stroke="#6b1010"
+              strokeWidth={1}
+            />
+            {/* Rounded bottom of cylinder */}
+            <Rect
+              x={btnCx - btnRx}
+              y={btnCy + btnSideH2 - btnRy * 0.5}
+              rx={btnRx}
+              ry={btnRy * 0.5}
+              width={btnRx * 2}
+              height={btnRy}
+              fill="url(#btnSide)"
+            />
+
+            {/* ===== BUTTON TOP FACE (ellipse) ===== */}
+            <Rect
+              x={btnCx - btnRx}
+              y={btnCy - btnRy}
+              rx={btnRx}
+              ry={btnRy}
+              width={btnRx * 2}
+              height={btnRy * 2}
+              fill="url(#btnGrad)"
+              stroke="#fca5a5"
+              strokeWidth={2}
+            />
+            {/* Highlight on button */}
+            <Rect
+              x={btnCx - btnRx * 0.55}
+              y={btnCy - btnRy * 0.65}
+              rx={btnRx * 0.45}
+              ry={btnRy * 0.35}
+              width={btnRx * 0.9}
+              height={btnRy * 0.6}
+              fill="rgba(255,255,255,0.2)"
+            />
+          </Svg>
+
+          {/* ===== GLASS CASE (RN Views for animation) ===== */}
+          <Animated.View
+            style={[styles.glassAnchor, {
+              top: topY - gth * 0.2,
+              left: (W - gw - 20) / 2,
+              width: gw + 20,
+              height: gfh + gth,
+              transform: [
+                { perspective: 500 },
+                { rotateX: caseSwing },
+              ],
+            }]}
+            pointerEvents={phase === 'closed' ? 'auto' : 'none'}
+          >
             <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={phase === 'open' ? pressButton : undefined}
-              disabled={phase === 'closed'}
-              style={styles.buttonPos}
+              activeOpacity={0.97}
+              onPress={phase === 'closed' ? openCase : undefined}
+              style={{ flex: 1 }}
             >
-              <Animated.View style={{
-                alignItems: 'center',
-                transform: [{ scale: phase === 'open' ? Animated.multiply(pulseAnim, btnScale) : btnScale }],
-              }}>
-                {/* Button top face (ellipse from this angle) */}
-                <View style={styles.buttonTop}>
-                  <View style={styles.btnShine1} />
-                  <View style={styles.btnShine2} />
-                </View>
-                {/* Button side (cylinder depth) */}
-                <Animated.View style={[styles.buttonSide, { height: btnSideH }]} />
-                {/* Dark shadow base */}
-                <View style={styles.buttonShadow} />
-              </Animated.View>
+              {/* Top panel */}
+              <View style={[styles.gTop, { height: gth }]} />
+              {/* Front panel */}
+              <View style={[styles.gFront, { height: gfh }]}>
+                <View style={styles.gShine1} />
+                <View style={styles.gShine2} />
+              </View>
+              {/* Left side */}
+              <View style={styles.gSideL} />
+              {/* Right side */}
+              <View style={styles.gSideR} />
             </TouchableOpacity>
+          </Animated.View>
 
-            {/* ===== GLASS CASE ===== */}
-            <Animated.View
-              style={[
-                styles.glassCase,
-                {
-                  transform: [
-                    { perspective: 500 },
-                    { rotateX: caseRotateInterp },
-                  ],
-                },
-              ]}
-              pointerEvents={phase === 'closed' ? 'auto' : 'none'}
-            >
-              <TouchableOpacity
-                activeOpacity={0.95}
-                onPress={phase === 'closed' ? openCase : undefined}
-                style={styles.glassTouchable}
-              >
-                {/* Front glass panel */}
-                <View style={styles.glassFront}>
-                  <View style={styles.glassShine1} />
-                  <View style={styles.glassShine2} />
-                </View>
-                {/* Left side panel */}
-                <View style={styles.glassSideL} />
-                {/* Right side panel */}
-                <View style={styles.glassSideR} />
-                {/* Top bar / frame */}
-                <View style={styles.glassFrame} />
-                <View style={styles.glassFrameBar} />
-              </TouchableOpacity>
-            </Animated.View>
-
-          </View>
+          {/* Invisible button press area over the SVG button */}
+          {phase === 'open' && (
+            <TouchableOpacity
+              activeOpacity={0.95}
+              onPress={pressButton}
+              style={[styles.btnHitArea, {
+                top: btnCy - btnRy - 10,
+                left: (W / 2) - btnRx - 10,
+                width: btnRx * 2 + 20,
+                height: btnRy * 2 + btnSideH2 + 20,
+              }]}
+            />
+          )}
         </View>
 
         <Text style={styles.infoText}>
           Cravings go away after 2 minutes.{'\n'}Hit the button and distract yourself.
         </Text>
 
-        {phase === 'closed' && <Text style={styles.hint}>Tap the case to open</Text>}
+        {phase === 'closed' && <Text style={styles.hint}>Lift the glass case</Text>}
         {phase === 'open' && (
-          <Animated.Text style={[styles.hint, styles.hintActive, { opacity: pulseAnim }]}>
-            Press the button
-          </Animated.Text>
+          <Text style={[styles.hint, styles.hintActive]}>Press the button!</Text>
         )}
       </Animated.View>
     </SafeAreaView>
   );
 }
 
+// ===== HELPER FUNCTIONS =====
+function lerp(a, b, t) {
+  return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+}
+
+function offsetH(p, other, t) {
+  return { x: p.x + (other.x - p.x) * t, y: p.y + (other.y - p.y) * t };
+}
+
+function generateStripes(tl, tr, bl, br, stripeW, count) {
+  const polys = [];
+  // Top edge stripes
+  for (let i = 0; i < count; i++) {
+    const t0 = i / count;
+    const t1 = (i + 1) / count;
+    const p1 = lerp(tl, tr, t0);
+    const p2 = lerp(tl, tr, t1);
+    const frac = stripeW / Math.hypot(bl.x - tl.x, bl.y - tl.y);
+    const p3 = lerp(lerp(tl, tr, t1), lerp(bl, br, t1), frac);
+    const p4 = lerp(lerp(tl, tr, t0), lerp(bl, br, t0), frac);
+    polys.push(`${p1.x},${p1.y} ${p2.x},${p2.y} ${p3.x},${p3.y} ${p4.x},${p4.y}`);
+  }
+  // Bottom edge stripes
+  for (let i = 0; i < count; i++) {
+    const t0 = i / count;
+    const t1 = (i + 1) / count;
+    const p1 = lerp(bl, br, t0);
+    const p2 = lerp(bl, br, t1);
+    const frac = stripeW / Math.hypot(bl.x - tl.x, bl.y - tl.y);
+    const p3 = lerp(lerp(bl, br, t1), lerp(tl, tr, t1), frac);
+    const p4 = lerp(lerp(bl, br, t0), lerp(tl, tr, t0), frac);
+    polys.push(`${p1.x},${p1.y} ${p2.x},${p2.y} ${p3.x},${p3.y} ${p4.x},${p4.y}`);
+  }
+  // Left edge stripes
+  for (let i = 0; i < 8; i++) {
+    const t0 = i / 8;
+    const t1 = (i + 1) / 8;
+    const p1 = lerp(tl, bl, t0);
+    const p2 = lerp(tl, bl, t1);
+    const frac = stripeW / Math.hypot(tr.x - tl.x, tr.y - tl.y);
+    const p3 = lerp(lerp(tl, bl, t1), lerp(tr, br, t1), frac);
+    const p4 = lerp(lerp(tl, bl, t0), lerp(tr, br, t0), frac);
+    polys.push(`${p1.x},${p1.y} ${p2.x},${p2.y} ${p3.x},${p3.y} ${p4.x},${p4.y}`);
+  }
+  // Right edge stripes
+  for (let i = 0; i < 8; i++) {
+    const t0 = i / 8;
+    const t1 = (i + 1) / 8;
+    const p1 = lerp(tr, br, t0);
+    const p2 = lerp(tr, br, t1);
+    const frac = stripeW / Math.hypot(tr.x - tl.x, tr.y - tl.y);
+    const p3 = lerp(lerp(tr, br, t1), lerp(tl, bl, t1), frac);
+    const p4 = lerp(lerp(tr, br, t0), lerp(tl, bl, t0), frac);
+    polys.push(`${p1.x},${p1.y} ${p2.x},${p2.y} ${p3.x},${p3.y} ${p4.x},${p4.y}`);
+  }
+  return polys;
+}
+
+function generateFrontStripes(bl, br, fbl, fbr, count) {
+  const polys = [];
+  for (let i = 0; i < count; i++) {
+    const t0 = i / count;
+    const t1 = (i + 1) / count;
+    const p1 = lerp(bl, br, t0);
+    const p2 = lerp(bl, br, t1);
+    const p3 = lerp(fbl, fbr, t1);
+    const p4 = lerp(fbl, fbr, t0);
+    polys.push(`${p1.x},${p1.y} ${p2.x},${p2.y} ${p3.x},${p3.y} ${p4.x},${p4.y}`);
+  }
+  return polys;
+}
+
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.bg },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  title: { fontSize: 22, fontWeight: '800', color: Colors.redLight, letterSpacing: 6, marginBottom: 30 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 },
+  title: { fontSize: 22, fontWeight: '800', color: Colors.redLight, letterSpacing: 6, marginBottom: 16 },
 
-  // Perspective tilt — looking at it from an angle above
-  perspectiveWrap: {
-    transform: [
-      { perspective: 600 },
-      { rotateX: '20deg' },
-      { rotateZ: '-2deg' },
-    ],
-  },
-  assemblyWrap: {
-    width: BASE_SIZE + 30,
-    height: BASE_SIZE + CASE_H + 10,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
+  scene: {
+    width: W,
+    height: H,
   },
 
-  // ===== HAZARD BASE =====
-  base: {
-    width: BASE_SIZE,
-    height: BASE_SIZE * 0.55,
-    borderRadius: 10,
-    overflow: 'hidden',
+  // Glass case
+  glassAnchor: {
+    position: 'absolute',
+    zIndex: 20,
+    transformOrigin: 'top center',
+  },
+  gTop: {
+    backgroundColor: 'rgba(160, 220, 245, 0.10)',
     borderWidth: 2,
-    borderColor: '#78350F',
-  },
-  baseStripes: {
-    flex: 1,
-    flexDirection: 'row',
-  },
-  stripe: {
-    flex: 1,
-    transform: [{ skewX: '-25deg' }],
-    marginHorizontal: -3,
-  },
-  basePlatform: {
-    position: 'absolute',
-    top: '15%',
-    left: '12%',
-    right: '12%',
-    bottom: '15%',
-    backgroundColor: '#1c1917',
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: '#44403c',
-  },
-
-  // ===== 3D BUTTON =====
-  buttonPos: {
-    position: 'absolute',
-    bottom: BASE_SIZE * 0.55 * 0.25,
-    zIndex: 3,
-    alignItems: 'center',
-  },
-  buttonTop: {
-    width: BUTTON_SIZE,
-    height: BUTTON_SIZE * 0.7,
-    borderRadius: BUTTON_SIZE / 2,
-    backgroundColor: '#ef4444',
-    overflow: 'hidden',
-    zIndex: 2,
-    shadowColor: '#ef4444',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.7,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  btnShine1: {
-    position: 'absolute',
-    top: '10%',
-    left: '15%',
-    width: '45%',
-    height: '35%',
-    borderRadius: 50,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    transform: [{ rotate: '-15deg' }],
-  },
-  btnShine2: {
-    position: 'absolute',
-    top: '22%',
-    left: '22%',
-    width: '25%',
-    height: '12%',
-    borderRadius: 30,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    transform: [{ rotate: '-15deg' }],
-  },
-  buttonSide: {
-    width: BUTTON_SIZE,
-    height: BUTTON_SIZE * 0.22,
-    backgroundColor: '#b91c1c',
-    borderBottomLeftRadius: BUTTON_SIZE * 0.15,
-    borderBottomRightRadius: BUTTON_SIZE * 0.15,
-    marginTop: -4,
-    zIndex: 1,
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderBottomWidth: 2,
-    borderColor: '#991b1b',
-  },
-  buttonShadow: {
-    width: BUTTON_SIZE + 6,
-    height: 8,
-    backgroundColor: '#450a0a',
-    borderRadius: BUTTON_SIZE / 2,
-    marginTop: -2,
-    opacity: 0.6,
-  },
-
-  // ===== GLASS CASE =====
-  glassCase: {
-    position: 'absolute',
-    bottom: BASE_SIZE * 0.55 * 0.2,
-    width: CASE_W,
-    height: CASE_H,
-    zIndex: 5,
-    transformOrigin: 'bottom center',
-  },
-  glassTouchable: { flex: 1 },
-  glassFront: {
-    flex: 1,
-    backgroundColor: 'rgba(150, 200, 220, 0.1)',
-    borderWidth: 2,
-    borderColor: 'rgba(100, 160, 190, 0.3)',
-    borderTopLeftRadius: 6,
-    borderTopRightRadius: 6,
+    borderColor: 'rgba(140, 210, 240, 0.28)',
     borderBottomWidth: 0,
+  },
+  gFront: {
+    backgroundColor: 'rgba(140, 200, 235, 0.08)',
+    borderWidth: 2,
+    borderColor: 'rgba(120, 190, 225, 0.25)',
+    borderTopWidth: 0,
     overflow: 'hidden',
   },
-  glassShine1: {
-    position: 'absolute',
-    top: '8%',
-    left: '10%',
-    width: '18%',
-    height: '55%',
-    borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    transform: [{ skewX: '-5deg' }],
+  gShine1: {
+    position: 'absolute', top: '4%', left: '10%',
+    width: 4, height: '80%',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 2,
   },
-  glassShine2: {
-    position: 'absolute',
-    top: '12%',
-    left: '26%',
-    width: '7%',
-    height: '40%',
-    borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    transform: [{ skewX: '-5deg' }],
+  gShine2: {
+    position: 'absolute', top: '8%', left: '18%',
+    width: 2, height: '60%',
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    borderRadius: 1,
   },
-  glassSideL: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 8,
-    backgroundColor: 'rgba(100, 160, 190, 0.08)',
-    borderTopLeftRadius: 6,
+  gSideL: {
+    position: 'absolute', top: 0, left: -8, bottom: 0, width: 10,
+    backgroundColor: 'rgba(150, 210, 235, 0.07)',
     borderLeftWidth: 2,
-    borderColor: 'rgba(100, 160, 190, 0.2)',
+    borderColor: 'rgba(130, 200, 230, 0.22)',
   },
-  glassSideR: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: 8,
-    backgroundColor: 'rgba(100, 160, 190, 0.08)',
-    borderTopRightRadius: 6,
+  gSideR: {
+    position: 'absolute', top: 0, right: -8, bottom: 0, width: 10,
+    backgroundColor: 'rgba(110, 170, 200, 0.04)',
     borderRightWidth: 2,
-    borderColor: 'rgba(100, 160, 190, 0.2)',
-  },
-  // Frame bars at top of glass (like the metal frame in the reference)
-  glassFrame: {
-    position: 'absolute',
-    top: 0,
-    left: -2,
-    right: -2,
-    height: 6,
-    backgroundColor: '#475569',
-    borderTopLeftRadius: 6,
-    borderTopRightRadius: 6,
-  },
-  glassFrameBar: {
-    position: 'absolute',
-    top: 0,
-    left: '40%',
-    width: '20%',
-    height: '100%',
-    backgroundColor: 'rgba(71, 85, 105, 0.15)',
-    borderLeftWidth: 2,
-    borderRightWidth: 2,
-    borderColor: 'rgba(71, 85, 105, 0.2)',
+    borderColor: 'rgba(100, 160, 190, 0.18)',
   },
 
-  // ===== INFO TEXT =====
+  // Invisible hit area for button press
+  btnHitArea: {
+    position: 'absolute',
+    zIndex: 25,
+  },
+
+  // Text
   infoText: {
-    fontSize: 15,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-    marginTop: 30,
+    fontSize: 15, color: Colors.textSecondary,
+    textAlign: 'center', lineHeight: 24, marginTop: 16,
   },
-  hint: { color: Colors.textMuted, fontSize: 13, marginTop: 14, letterSpacing: 0.5 },
-  hintActive: { color: Colors.redLight },
+  hint: { color: Colors.textMuted, fontSize: 13, marginTop: 10, letterSpacing: 0.5 },
+  hintActive: { color: Colors.redLight, fontWeight: '600' },
 
-  // ===== BREATHING =====
+  // Breathing
   breatheHeading: { fontSize: 24, fontWeight: '800', color: Colors.textBright, marginBottom: 8 },
   breatheSub: { fontSize: 14, color: Colors.textSecondary, marginBottom: 40 },
   breatheArea: { width: 260, height: 260, alignItems: 'center', justifyContent: 'center', marginBottom: 30 },
@@ -477,7 +529,7 @@ const styles = StyleSheet.create({
   endBtn: { borderWidth: 1, borderColor: Colors.border, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 40 },
   endBtnText: { color: Colors.textMuted, fontSize: 15 },
 
-  // ===== COMPLETE =====
+  // Complete
   completeCheck: { width: 80, height: 80, borderRadius: 40, borderWidth: 3, borderColor: Colors.green, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
   completeTitle: { fontSize: 28, fontWeight: '800', color: Colors.green, marginBottom: 12 },
   completeText: { fontSize: 16, color: Colors.text, textAlign: 'center', lineHeight: 24, marginBottom: 12 },

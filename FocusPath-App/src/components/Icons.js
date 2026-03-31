@@ -151,6 +151,40 @@ export function FactsIcon({ size = 24, color = Colors.red, focused = false }) {
   );
 }
 
+export function FriendsIcon({ size = 24, color = Colors.red, focused = false }) {
+  const scale = usePulse(focused, 1800);
+  return (
+    <Animated.View style={{ transform: [{ scale: focused ? scale : 1 }] }}>
+      <Svg width={size} height={size} viewBox="0 0 24 24">
+        <Defs>
+          <LinearGradient id="friendsGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <Stop offset="0%" stopColor={focused ? Colors.redLight : color} />
+            <Stop offset="100%" stopColor={focused ? Colors.red : color} />
+          </LinearGradient>
+        </Defs>
+        {/* Left person */}
+        <Circle cx="9" cy="7" r="3" stroke="url(#friendsGrad)" strokeWidth={2} fill="none" />
+        <Path
+          d="M2 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"
+          stroke="url(#friendsGrad)"
+          strokeWidth={2}
+          strokeLinecap="round"
+          fill="none"
+        />
+        {/* Right person (smaller, behind) */}
+        <Circle cx="17" cy="8" r="2.5" stroke={focused ? Colors.red : color} strokeWidth={1.5} fill="none" />
+        <Path
+          d="M20 21v-0.5a3.5 3.5 0 0 0-3.5-3.5h-1"
+          stroke={focused ? Colors.red : color}
+          strokeWidth={1.5}
+          strokeLinecap="round"
+          fill="none"
+        />
+      </Svg>
+    </Animated.View>
+  );
+}
+
 export function ProfileIcon({ size = 24, color = Colors.red, focused = false }) {
   const scale = usePulse(focused, 1800);
   return (
@@ -471,130 +505,115 @@ export function FireIcon({ size = 20, color = Colors.red }) {
 
 // ===== RANK ICONS =====
 
-// Beginner - small seedling/sprout
-export function BeginnerRankIcon({ size = 32 }) {
+// Grounded - planted seedling with roots
+export function GroundedRankIcon({ size = 32 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 32 32">
       <Defs>
-        <LinearGradient id="begGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-          <Stop offset="0%" stopColor={Colors.red} />
-          <Stop offset="100%" stopColor={Colors.redLight} />
+        <LinearGradient id="grndGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+          <Stop offset="0%" stopColor="#6B8E23" />
+          <Stop offset="100%" stopColor="#8FBC8F" />
         </LinearGradient>
       </Defs>
-      <Path d="M16 28V18" stroke="url(#begGrad)" strokeWidth={2.5} strokeLinecap="round" />
-      <Path d="M16 20C12 20 9 17 9 13C13 13 16 16 16 20Z" fill={Colors.red} opacity={0.7} />
-      <Path d="M16 16C20 16 23 13 23 9C19 9 16 12 16 16Z" fill={Colors.redLight} opacity={0.7} />
-      <Path d="M10 28H22" stroke={Colors.border} strokeWidth={2} strokeLinecap="round" />
+      <Path d="M16 26V16" stroke="url(#grndGrad)" strokeWidth={2.5} strokeLinecap="round" />
+      <Path d="M16 18C12 18 9 15 9 11C13 11 16 14 16 18Z" fill="#6B8E23" opacity={0.8} />
+      <Path d="M16 14C20 14 23 11 23 7C19 7 16 10 16 14Z" fill="#8FBC8F" opacity={0.8} />
+      <Path d="M13 26C13 23 16 22 16 26" stroke="#6B8E23" strokeWidth={1.5} strokeLinecap="round" fill="none" opacity={0.5} />
+      <Path d="M19 26C19 23 16 22 16 26" stroke="#6B8E23" strokeWidth={1.5} strokeLinecap="round" fill="none" opacity={0.5} />
+      <Path d="M8 28H24" stroke={Colors.border} strokeWidth={2} strokeLinecap="round" />
     </Svg>
   );
 }
 
-// Fighter - boxing glove / fist
-export function FighterRankIcon({ size = 32 }) {
+// Awakened - sunrise with opening eye
+export function AwakenedRankIcon({ size = 32 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 32 32">
       <Defs>
-        <LinearGradient id="fightGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <Stop offset="0%" stopColor={Colors.red} />
-          <Stop offset="100%" stopColor={Colors.redLight} />
+        <LinearGradient id="awakGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+          <Stop offset="0%" stopColor="#E8A317" />
+          <Stop offset="100%" stopColor="#FFD700" />
         </LinearGradient>
       </Defs>
-      <Path
-        d="M8 14C8 9 11 6 16 6C21 6 24 9 24 14C24 17 22 19 20 20L20 24C20 25 19 26 18 26H14C13 26 12 25 12 24L12 20C10 19 8 17 8 14Z"
-        fill="url(#fightGrad)"
-        opacity={0.85}
-      />
-      <Path d="M12 13H20" stroke="#fff" strokeWidth={1.5} strokeLinecap="round" opacity={0.4} />
-      <Path d="M12 16H20" stroke="#fff" strokeWidth={1.5} strokeLinecap="round" opacity={0.3} />
-      <Rect x="12" y="23" width="8" height="3" rx="1" fill={Colors.redDark} />
+      <Path d="M4 22H28" stroke={Colors.border} strokeWidth={1.5} strokeLinecap="round" />
+      <Path d="M16 22C20.4 22 24 18.4 24 14" stroke="#FFD700" strokeWidth={2} strokeLinecap="round" fill="none" />
+      <Path d="M16 22C11.6 22 8 18.4 8 14" stroke="#FFD700" strokeWidth={2} strokeLinecap="round" fill="none" />
+      <Circle cx="16" cy="14" r="5" fill="url(#awakGrad)" />
+      <Circle cx="16" cy="14" r="2" fill="#fff" opacity={0.7} />
+      <Path d="M16 6V8" stroke="#FFD700" strokeWidth={2} strokeLinecap="round" />
+      <Path d="M10 8L11 10" stroke="#E8A317" strokeWidth={1.5} strokeLinecap="round" />
+      <Path d="M22 8L21 10" stroke="#E8A317" strokeWidth={1.5} strokeLinecap="round" />
     </Svg>
   );
 }
 
-// Champion - shield with star
-export function ChampionRankIcon({ size = 32 }) {
+// Rising - shooting star / arrow upward
+export function RisingRankIcon({ size = 32 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 32 32">
       <Defs>
-        <LinearGradient id="champGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <Stop offset="0%" stopColor={Colors.red} />
-          <Stop offset="100%" stopColor={Colors.redLight} />
+        <LinearGradient id="riseGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+          <Stop offset="0%" stopColor="#FF6347" />
+          <Stop offset="100%" stopColor="#FF8C69" />
         </LinearGradient>
       </Defs>
-      <Path
-        d="M16 4L6 8V16C6 22 10 26 16 28C22 26 26 22 26 16V8L16 4Z"
-        fill="url(#champGrad)"
-        opacity={0.8}
-      />
-      <Path
-        d="M16 4L6 8V16C6 22 10 26 16 28C22 26 26 22 26 16V8L16 4Z"
-        stroke={Colors.redLight}
-        strokeWidth={1.5}
-        fill="none"
-      />
-      <Path
-        d="M16 10L17.8 14.1L22 14.6L18.9 17.5L19.7 21.6L16 19.5L12.3 21.6L13.1 17.5L10 14.6L14.2 14.1L16 10Z"
-        fill="#fff"
-        opacity={0.9}
-      />
+      <Path d="M8 26L24 6" stroke="url(#riseGrad)" strokeWidth={2.5} strokeLinecap="round" />
+      <Path d="M18 6H24V12" stroke="#FF8C69" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <Path d="M6 24L10 22" stroke="#FF6347" strokeWidth={1.5} strokeLinecap="round" opacity={0.5} />
+      <Path d="M10 26L14 24" stroke="#FF6347" strokeWidth={1.5} strokeLinecap="round" opacity={0.3} />
+      <Circle cx="24" cy="6" r="2" fill="#FF8C69" opacity={0.6} />
     </Svg>
   );
 }
 
-// Warrior - crossed swords
-export function WarriorRankIcon({ size = 32 }) {
+// Elevated - mountain peak with flag
+export function ElevatedRankIcon({ size = 32 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 32 32">
       <Defs>
-        <LinearGradient id="warGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <Stop offset="0%" stopColor={Colors.redDark} />
-          <Stop offset="100%" stopColor={Colors.redLight} />
+        <LinearGradient id="elevGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+          <Stop offset="0%" stopColor="#2E8B57" />
+          <Stop offset="100%" stopColor="#3CB371" />
         </LinearGradient>
       </Defs>
-      <Path d="M8 26L22 6" stroke="url(#warGrad)" strokeWidth={2.5} strokeLinecap="round" />
-      <Path d="M20 6L24 6L24 10" stroke={Colors.redLight} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      <Path d="M6 24L10 28" stroke={Colors.red} strokeWidth={2} strokeLinecap="round" />
-      <Path d="M24 26L10 6" stroke="url(#warGrad)" strokeWidth={2.5} strokeLinecap="round" />
-      <Path d="M12 6L8 6L8 10" stroke={Colors.redLight} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      <Path d="M26 24L22 28" stroke={Colors.red} strokeWidth={2} strokeLinecap="round" />
-      <Circle cx="16" cy="16" r="3" fill={Colors.red} />
-      <Circle cx="16" cy="16" r="1.5" fill={Colors.redLight} />
+      <Path d="M4 28L16 8L28 28Z" fill="url(#elevGrad)" opacity={0.7} />
+      <Path d="M4 28L16 8L28 28" stroke="#3CB371" strokeWidth={1.5} fill="none" strokeLinejoin="round" />
+      <Path d="M10 28L16 16L22 28" fill="#2E8B57" opacity={0.4} />
+      <Path d="M16 8V4" stroke="#3CB371" strokeWidth={2} strokeLinecap="round" />
+      <Path d="M16 4L22 7L16 7" fill="#3CB371" opacity={0.9} />
+      <Circle cx="16" cy="8" r="1.5" fill="#fff" opacity={0.6} />
     </Svg>
   );
 }
 
-// Legend - crown
-export function LegendRankIcon({ size = 32 }) {
+// Radiant - sparkling star
+export function RadiantRankIcon({ size = 32 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 32 32">
       <Defs>
-        <LinearGradient id="legGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <Stop offset="0%" stopColor={Colors.red} />
-          <Stop offset="100%" stopColor={Colors.redLight} />
+        <LinearGradient id="radGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <Stop offset="0%" stopColor="#9B59B6" />
+          <Stop offset="100%" stopColor="#D4A8E8" />
         </LinearGradient>
       </Defs>
       <Path
-        d="M4 22L8 10L13 16L16 6L19 16L24 10L28 22Z"
-        fill="url(#legGrad)"
+        d="M16 2L18.5 12.5L28 10L20 16L28 22L18.5 19.5L16 30L13.5 19.5L4 22L12 16L4 10L13.5 12.5L16 2Z"
+        fill="url(#radGrad)"
         opacity={0.85}
       />
       <Path
-        d="M4 22L8 10L13 16L16 6L19 16L24 10L28 22Z"
-        stroke={Colors.redLight}
-        strokeWidth={1.5}
+        d="M16 2L18.5 12.5L28 10L20 16L28 22L18.5 19.5L16 30L13.5 19.5L4 22L12 16L4 10L13.5 12.5L16 2Z"
+        stroke="#D4A8E8"
+        strokeWidth={1}
         fill="none"
-        strokeLinejoin="round"
       />
-      <Rect x="4" y="22" width="24" height="4" rx="1" fill={Colors.redDark} />
-      <Circle cx="10" cy="24" r="1" fill={Colors.redLight} />
-      <Circle cx="16" cy="24" r="1" fill={Colors.redLight} />
-      <Circle cx="22" cy="24" r="1" fill={Colors.redLight} />
-      <Circle cx="16" cy="8" r="1.5" fill="#fff" opacity={0.8} />
+      <Circle cx="16" cy="16" r="3" fill="#D4A8E8" opacity={0.6} />
+      <Circle cx="16" cy="16" r="1.5" fill="#fff" opacity={0.7} />
     </Svg>
   );
 }
 
-// UNCLOUDED - radiant sun
+// Unclouded - radiant sun with clear sky
 export function UncloudedRankIcon({ size = 32 }) {
   const glow = useGlow(true, 2000);
   return (
@@ -602,23 +621,23 @@ export function UncloudedRankIcon({ size = 32 }) {
       <Svg width={size} height={size} viewBox="0 0 32 32">
         <Defs>
           <LinearGradient id="uncGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <Stop offset="0%" stopColor={Colors.redDark} />
-            <Stop offset="50%" stopColor={Colors.red} />
-            <Stop offset="100%" stopColor={Colors.redLight} />
+            <Stop offset="0%" stopColor="#E8A317" />
+            <Stop offset="50%" stopColor="#FFD700" />
+            <Stop offset="100%" stopColor="#FFF8DC" />
           </LinearGradient>
         </Defs>
-        <Path d="M16 2V6" stroke={Colors.redLight} strokeWidth={2} strokeLinecap="round" />
-        <Path d="M16 26V30" stroke={Colors.redLight} strokeWidth={2} strokeLinecap="round" />
-        <Path d="M2 16H6" stroke={Colors.redLight} strokeWidth={2} strokeLinecap="round" />
-        <Path d="M26 16H30" stroke={Colors.redLight} strokeWidth={2} strokeLinecap="round" />
-        <Path d="M6.1 6.1L8.9 8.9" stroke={Colors.red} strokeWidth={2} strokeLinecap="round" />
-        <Path d="M23.1 23.1L25.9 25.9" stroke={Colors.red} strokeWidth={2} strokeLinecap="round" />
-        <Path d="M25.9 6.1L23.1 8.9" stroke={Colors.red} strokeWidth={2} strokeLinecap="round" />
-        <Path d="M8.9 23.1L6.1 25.9" stroke={Colors.red} strokeWidth={2} strokeLinecap="round" />
+        <Path d="M16 2V6" stroke="#FFD700" strokeWidth={2} strokeLinecap="round" />
+        <Path d="M16 26V30" stroke="#FFD700" strokeWidth={2} strokeLinecap="round" />
+        <Path d="M2 16H6" stroke="#FFD700" strokeWidth={2} strokeLinecap="round" />
+        <Path d="M26 16H30" stroke="#FFD700" strokeWidth={2} strokeLinecap="round" />
+        <Path d="M6.1 6.1L8.9 8.9" stroke="#E8A317" strokeWidth={2} strokeLinecap="round" />
+        <Path d="M23.1 23.1L25.9 25.9" stroke="#E8A317" strokeWidth={2} strokeLinecap="round" />
+        <Path d="M25.9 6.1L23.1 8.9" stroke="#E8A317" strokeWidth={2} strokeLinecap="round" />
+        <Path d="M8.9 23.1L6.1 25.9" stroke="#E8A317" strokeWidth={2} strokeLinecap="round" />
         <Circle cx="16" cy="16" r="8" fill="url(#uncGrad)" />
-        <Circle cx="16" cy="16" r="8" stroke={Colors.redLight} strokeWidth={1.5} fill="none" />
-        <Circle cx="16" cy="16" r="4" fill={Colors.redLight} opacity={0.5} />
-        <Circle cx="16" cy="16" r="2" fill="#fff" opacity={0.6} />
+        <Circle cx="16" cy="16" r="8" stroke="#FFD700" strokeWidth={1.5} fill="none" />
+        <Circle cx="16" cy="16" r="4" fill="#FFD700" opacity={0.5} />
+        <Circle cx="16" cy="16" r="2" fill="#fff" opacity={0.7} />
       </Svg>
     </Animated.View>
   );
@@ -627,13 +646,13 @@ export function UncloudedRankIcon({ size = 32 }) {
 // Rank icon picker
 export function RankIcon({ rank, size = 32 }) {
   switch (rank) {
-    case 'Beginner': return <BeginnerRankIcon size={size} />;
-    case 'Fighter': return <FighterRankIcon size={size} />;
-    case 'Champion': return <ChampionRankIcon size={size} />;
-    case 'Warrior': return <WarriorRankIcon size={size} />;
-    case 'Legend': return <LegendRankIcon size={size} />;
-    case 'UNCLOUDED': return <UncloudedRankIcon size={size} />;
-    default: return <BeginnerRankIcon size={size} />;
+    case 'Grounded': return <GroundedRankIcon size={size} />;
+    case 'Awakened': return <AwakenedRankIcon size={size} />;
+    case 'Rising': return <RisingRankIcon size={size} />;
+    case 'Elevated': return <ElevatedRankIcon size={size} />;
+    case 'Radiant': return <RadiantRankIcon size={size} />;
+    case 'Unclouded': return <UncloudedRankIcon size={size} />;
+    default: return <GroundedRankIcon size={size} />;
   }
 }
 

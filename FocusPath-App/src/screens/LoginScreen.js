@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Colors } from '../utils/colors';
 import { getUsers, saveUsers, setSession } from '../utils/storage';
+import { supabase } from '../utils/supabase';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -33,6 +34,12 @@ export default function LoginScreen({ navigation }) {
       Alert.alert('Error', 'Incorrect password.');
       return;
     }
+
+    // Sign into Supabase
+    await supabase.auth.signInWithPassword({
+      email: trimmedEmail,
+      password: password,
+    }).catch(() => {});
 
     await setSession(trimmedEmail);
     const user = users[trimmedEmail];
@@ -113,7 +120,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '800',
-    color: Colors.textBright,
+    color: '#A8D8EA',
     textAlign: 'center',
   },
   tagline: {

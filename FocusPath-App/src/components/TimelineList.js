@@ -4,10 +4,10 @@ import { Colors } from '../utils/colors';
 import { getPersonalizedTimeline } from '../data/timeline';
 
 const DIFFICULTY_COLORS = {
-  hard: { bg: 'rgba(239,68,68,0.15)', text: '#f87171' },
-  medium: { bg: 'rgba(251,191,36,0.15)', text: '#fbbf24' },
-  easy: { bg: 'rgba(74,222,128,0.15)', text: '#4ade80' },
-  victory: { bg: 'rgba(239,68,68,0.2)', text: '#f87171' },
+  hard: { bg: 'rgba(91,168,200,0.15)', text: '#4a96b8' },
+  medium: { bg: 'rgba(251,191,36,0.15)', text: '#d4a017' },
+  easy: { bg: 'rgba(74,222,128,0.15)', text: '#2da55e' },
+  victory: { bg: 'rgba(91,168,200,0.2)', text: '#4a96b8' },
 };
 
 const VAPING_LABELS = {
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   adviceBox: {
-    backgroundColor: 'rgba(239,68,68,0.08)',
+    backgroundColor: 'rgba(91,168,200,0.08)',
     borderLeftWidth: 3,
     borderLeftColor: Colors.red,
     borderRadius: 8,

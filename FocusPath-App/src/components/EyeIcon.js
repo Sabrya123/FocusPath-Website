@@ -1,7 +1,7 @@
 import React from 'react';
 import Svg, { Path, Circle } from 'react-native-svg';
 
-export function EyeOpen({ size = 24, color = '#e2e2e2' }) {
+export function EyeOpen({ size = 24, color = '#1a3a4a' }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
@@ -22,7 +22,7 @@ export function EyeOpen({ size = 24, color = '#e2e2e2' }) {
   );
 }
 
-export function EyeClosed({ size = 24, color = '#e2e2e2' }) {
+export function EyeClosed({ size = 24, color = '#1a3a4a' }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path

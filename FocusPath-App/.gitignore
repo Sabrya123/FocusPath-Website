@@ -8,3 +8,8 @@ dist/
 *.mobileprovision
 *.orig.*
 web-build/
+
+# environment variables
+.env
+.env.local
+.env.production

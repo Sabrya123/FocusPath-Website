@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Colors } from '../utils/colors';
 import { getUsers, saveUsers, setSession } from '../utils/storage';
+import { supabase } from '../utils/supabase';
 import { EyeOpen, EyeClosed } from '../components/EyeIcon';
 
 export default function SignupScreen({ navigation }) {
@@ -45,8 +46,28 @@ export default function SignupScreen({ navigation }) {
       return;
     }
 
-    // Don't persist new accounts to storage for now
-    // Just set session so the app flow works during this session
+    // Create Supabase auth account
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: trimmedEmail,
+      password: password,
+      options: { data: { name: trimmedName } },
+    });
+
+    if (authError) {
+      // If Supabase signup fails, continue with local-only flow
+      console.warn('Supabase signup failed:', authError.message);
+    } else if (authData?.user) {
+      // Create profile in Supabase
+      await supabase.from('profiles').upsert({
+        id: authData.user.id,
+        name: trimmedName,
+        email: trimmedEmail,
+      });
+    }
+
+    // Save locally and continue
+    users[trimmedEmail] = { name: trimmedName, email: trimmedEmail, password };
+    await saveUsers(users);
     await setSession(trimmedEmail);
     navigation.replace('Identity');
   }
@@ -158,7 +179,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '800',
-    color: Colors.textBright,
+    color: '#A8D8EA',
     textAlign: 'center',
   },
   tagline: {
