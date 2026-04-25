@@ -11,7 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { Colors } from '../utils/colors';
-import { getUsers, saveUsers, setSession } from '../utils/storage';
+import { getUsers, saveUsers, setSession, clearAllData } from '../utils/storage';
 import { supabase } from '../utils/supabase';
 
 export default function LoginScreen({ navigation }) {
@@ -103,6 +103,31 @@ export default function LoginScreen({ navigation }) {
               <Text style={styles.switchLink}>Sign up</Text>
             </Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.clearRow}
+            onPress={() => {
+              Alert.alert(
+                'Clear all accounts?',
+                'This deletes every saved account on this device. This cannot be undone.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Clear all',
+                    style: 'destructive',
+                    onPress: async () => {
+                      await clearAllData();
+                      setEmail('');
+                      setPassword('');
+                      Alert.alert('Cleared', 'All accounts on this device have been deleted.');
+                    },
+                  },
+                ]
+              );
+            }}
+          >
+            <Text style={styles.clearText}>Clear all accounts</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -175,4 +200,6 @@ const styles = StyleSheet.create({
   switchRow: { marginTop: 20, alignItems: 'center' },
   switchText: { color: Colors.textSecondary, fontSize: 14 },
   switchLink: { color: Colors.redLight },
+  clearRow: { marginTop: 16, alignItems: 'center' },
+  clearText: { color: Colors.textMuted, fontSize: 12, textDecorationLine: 'underline' },
 });
