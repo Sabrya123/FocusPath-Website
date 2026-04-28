@@ -11,6 +11,7 @@ import { HomeIcon, TimelineIcon, EmergencyIcon, FriendsIcon, ProfileIcon } from 
 import LoginScreen from './src/screens/LoginScreen';
 import SignupScreen from './src/screens/SignupScreen';
 import IdentityScreen from './src/screens/IdentityScreen';
+import GoodbyeLetterScreen from './src/screens/GoodbyeLetterScreen';
 import HomeTab from './src/screens/HomeTab';
 import TimelineTab from './src/screens/TimelineTab';
 import EmergencyTab from './src/screens/EmergencyTab';
@@ -18,6 +19,7 @@ import FriendsTab from './src/screens/FriendsTab';
 import ProfileTab from './src/screens/ProfileTab';
 import AddHabitScreen from './src/screens/AddHabitScreen';
 import HabitSessionScreen from './src/screens/HabitSessionScreen';
+import ChatScreen from './src/screens/ChatScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -84,6 +86,8 @@ export default function App() {
       setInitialRoute('Login');
     } else if (!user.identity) {
       setInitialRoute('Identity');
+    } else if (!user.goodbyeLetter) {
+      setInitialRoute('GoodbyeLetter');
     } else {
       setInitialRoute('Dashboard');
     }
@@ -120,6 +124,7 @@ export default function App() {
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Signup" component={SignupScreen} />
         <Stack.Screen name="Identity" component={IdentityScreen} />
+        <Stack.Screen name="GoodbyeLetter" component={GoodbyeLetterScreen} />
         <Stack.Screen name="Dashboard" component={MainTabs} />
         <Stack.Screen
           name="AddHabit"
@@ -130,6 +135,11 @@ export default function App() {
           name="HabitSession"
           component={HabitSessionScreen}
           options={{ presentation: 'fullScreenModal', gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="Chat"
+          component={ChatScreen}
+          options={{ animation: 'slide_from_right' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

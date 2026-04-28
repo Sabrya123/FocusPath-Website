@@ -610,6 +610,7 @@ export default function HomeTab({ navigation }) {
 
       let newStreak = user.streakDays || 0;
       let newPoints = user.points || 0;
+      let newTotalCleanDays = user.totalCleanDays ?? (user.streakDays || 0);
       const pendingPts = user.pendingPoints || 0;
       const pendingStreak = user.pendingStreak || 0;
 
@@ -617,11 +618,17 @@ export default function HomeTab({ navigation }) {
         // Yesterday was completed — lock in pending points & streak
         newPoints = newPoints + pendingPts;
         newStreak = newStreak + pendingStreak;
+        newTotalCleanDays = newTotalCleanDays + pendingStreak;
       } else if (lastHabitDate && lastHabitDate !== yesterdayStr) {
         // Missed a day — reset streak, lose points, discard pending
         newStreak = 0;
         newPoints = Math.max(0, newPoints - POINTS_LOST_ON_MISS);
       }
+
+      const newLongestStreak = Math.max(
+        user.longestStreak ?? (user.streakDays || 0),
+        newStreak
+      );
 
       // Reset habits and mantra for new day
       const resetHabits = (user.habits || []).map(h => ({ ...h, done: false }));
@@ -641,6 +648,8 @@ export default function HomeTab({ navigation }) {
         points: newPoints,
         pendingPoints: 0,
         pendingStreak: 0,
+        longestStreak: newLongestStreak,
+        totalCleanDays: newTotalCleanDays,
       });
     }
   }

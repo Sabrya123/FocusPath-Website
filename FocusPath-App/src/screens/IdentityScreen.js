@@ -301,6 +301,28 @@ export default function IdentityScreen({ navigation }) {
   const [aiNonNegs, setAiNonNegs] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // First habit modal
+  const [showHabitModal, setShowHabitModal] = useState(false);
+
+  function handleSaveHabit() {
+    if (!firstHabitCategory) {
+      Alert.alert('Pick a category', 'Choose Physical, Spiritual, or Mental.');
+      return;
+    }
+    if (!firstHabitName.trim()) {
+      Alert.alert('Name your habit', 'What do you want to do every day?');
+      return;
+    }
+    const timer = parseInt(firstHabitTimer);
+    if (!timer || timer < 1) {
+      Alert.alert('Set a timer', 'Enter how many minutes you want to commit.');
+      return;
+    }
+    setShowHabitModal(false);
+  }
+
+  const habitConfigured = !!firstHabitCategory && !!firstHabitName.trim();
+
   const wordCount = getWordCount(identity);
 
   const AI_MOTIVATOR_OPTIONS = [
@@ -414,7 +436,7 @@ export default function IdentityScreen({ navigation }) {
       points: 0,
     };
     await saveUsers(users);
-    navigation.replace('Dashboard');
+    navigation.replace('GoodbyeLetter');
   }
 
   return (
@@ -423,7 +445,7 @@ export default function IdentityScreen({ navigation }) {
       contentContainerStyle={styles.scroll}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.title}>Who Do You Want to Be?</Text>
+      <Text style={styles.title}>Developing Your Identity</Text>
       <Text style={styles.subtitle}>
         Tell us about the person you're becoming. This helps us personalise your
         journey.
@@ -607,48 +629,128 @@ export default function IdentityScreen({ navigation }) {
           Replace vaping with one positive habit. You'll unlock more habits as you progress.
         </Text>
 
-        <Text style={[styles.hint, { marginTop: 8, marginBottom: 4 }]}>Category</Text>
-        <View style={styles.optionGrid}>
-          {[
-            { key: 'physical', label: 'Physical' },
-            { key: 'spiritual', label: 'Spiritual' },
-            { key: 'mental', label: 'Mental' },
-          ].map(cat => (
-            <TouchableOpacity
-              key={cat.key}
-              style={[styles.optionBtn, firstHabitCategory === cat.key && styles.optionBtnActive]}
-              onPress={() => setFirstHabitCategory(cat.key)}
-            >
-              <Text style={[styles.optionText, firstHabitCategory === cat.key && styles.optionTextActive]}>
-                {cat.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <Text style={[styles.hint, { marginTop: 12, marginBottom: 4 }]}>What habit?</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g. Read Quran, Go for a run, Journal..."
-          placeholderTextColor={Colors.textMuted}
-          value={firstHabitName}
-          onChangeText={setFirstHabitName}
-        />
-
-        <Text style={[styles.hint, { marginTop: 12, marginBottom: 4 }]}>Timer (minutes)</Text>
-        <TextInput
-          style={[styles.input, { width: 100 }]}
-          placeholder="10"
-          placeholderTextColor={Colors.textMuted}
-          value={firstHabitTimer}
-          onChangeText={setFirstHabitTimer}
-          keyboardType="number-pad"
-        />
+        <TouchableOpacity
+          style={[styles.habitBtn, habitConfigured && styles.habitBtnDone]}
+          onPress={() => setShowHabitModal(true)}
+        >
+          {habitConfigured ? (
+            <View style={styles.habitBtnInner}>
+              <Text style={styles.habitBtnCheck}>✓</Text>
+              <View style={styles.habitBtnTextWrap}>
+                <Text style={styles.habitBtnDoneTitle}>{firstHabitName}</Text>
+                <Text style={styles.habitBtnDoneSub}>
+                  {firstHabitCategory.charAt(0).toUpperCase() + firstHabitCategory.slice(1)}
+                  {' · '}
+                  {firstHabitTimer || 10} min · tap to edit
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.habitBtnInner}>
+              <Text style={styles.habitBtnPlus}>+</Text>
+              <View style={styles.habitBtnTextWrap}>
+                <Text style={styles.habitBtnTitle}>Set up your first daily habit</Text>
+                <Text style={styles.habitBtnSub}>Choose a category, name it, set a timer</Text>
+              </View>
+            </View>
+          )}
+        </TouchableOpacity>
 
         <TouchableOpacity style={styles.btnPrimary} onPress={handleSubmit}>
           <Text style={styles.btnPrimaryText}>Begin My Journey</Text>
         </TouchableOpacity>
       </View>
+
+      {/* First Habit Modal */}
+      <Modal visible={showHabitModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={styles.modalContainer}
+          >
+            <ScrollView
+              style={styles.modalScroll}
+              contentContainerStyle={styles.modalScrollContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Your First Daily Habit</Text>
+                <TouchableOpacity onPress={() => setShowHabitModal(false)}>
+                  <CloseIcon size={22} color={Colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.quoteCard}>
+                <Text style={styles.quoteMark}>"</Text>
+                <Text style={styles.quoteText}>
+                  You don't eliminate bad habits; you replace them.
+                </Text>
+                <Text style={styles.quoteAttribution}>
+                  — James Clear, Atomic Habits
+                </Text>
+              </View>
+
+              <Text style={styles.modalSubtitle}>
+                Pick something you can do every single day. Small and consistent
+                beats big and unsustainable.
+              </Text>
+
+              <Text style={styles.modalLabel}>Category</Text>
+              <View style={styles.optionGrid}>
+                {[
+                  { key: 'physical', label: 'Physical' },
+                  { key: 'spiritual', label: 'Spiritual' },
+                  { key: 'mental', label: 'Mental' },
+                ].map((cat) => (
+                  <TouchableOpacity
+                    key={cat.key}
+                    style={[
+                      styles.optionBtn,
+                      firstHabitCategory === cat.key && styles.optionBtnActive,
+                    ]}
+                    onPress={() => setFirstHabitCategory(cat.key)}
+                  >
+                    <Text
+                      style={[
+                        styles.optionText,
+                        firstHabitCategory === cat.key && styles.optionTextActive,
+                      ]}
+                    >
+                      {cat.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.modalLabel}>What habit?</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="e.g. Read Quran, Go for a run, Journal..."
+                placeholderTextColor={Colors.textMuted}
+                value={firstHabitName}
+                onChangeText={setFirstHabitName}
+              />
+
+              <Text style={styles.modalLabel}>Timer (minutes)</Text>
+              <TextInput
+                style={[styles.modalInput, { width: 120 }]}
+                placeholder="10"
+                placeholderTextColor={Colors.textMuted}
+                value={firstHabitTimer}
+                onChangeText={setFirstHabitTimer}
+                keyboardType="number-pad"
+              />
+
+              <TouchableOpacity
+                style={styles.aiGenerateBtn}
+                onPress={handleSaveHabit}
+              >
+                <Text style={styles.aiGenerateBtnText}>Save Habit</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -656,6 +758,98 @@ export default function IdentityScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
   scroll: { padding: 24, paddingTop: 60, paddingBottom: 40 },
+  quoteCard: {
+    backgroundColor: Colors.bgCard,
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.red,
+    borderRadius: 12,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  quoteMark: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: Colors.red,
+    lineHeight: 32,
+    marginBottom: -6,
+  },
+  quoteText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: Colors.textBright,
+    lineHeight: 24,
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
+  quoteAttribution: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 8,
+    fontWeight: '600',
+  },
+  habitBtn: {
+    backgroundColor: Colors.bgInput,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 12,
+  },
+  habitBtnDone: {
+    backgroundColor: 'rgba(91, 168, 200, 0.1)',
+    borderColor: Colors.red,
+    borderStyle: 'solid',
+  },
+  habitBtnInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  habitBtnPlus: {
+    fontSize: 28,
+    fontWeight: '300',
+    color: Colors.red,
+    width: 32,
+    textAlign: 'center',
+  },
+  habitBtnCheck: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#fff',
+    backgroundColor: Colors.red,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    textAlign: 'center',
+    lineHeight: 32,
+    overflow: 'hidden',
+  },
+  habitBtnTextWrap: {
+    flex: 1,
+  },
+  habitBtnTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.textBright,
+  },
+  habitBtnSub: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  habitBtnDoneTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.textBright,
+  },
+  habitBtnDoneSub: {
+    fontSize: 12,
+    color: Colors.redLight,
+    marginTop: 2,
+    fontWeight: '600',
+  },
   title: {
     fontSize: 26,
     fontWeight: '800',

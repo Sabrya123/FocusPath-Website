@@ -188,6 +188,51 @@ export async function markAlertSeen(alertId) {
     .eq('id', alertId);
 }
 
+export async function sendMessage(senderId, receiverId, body) {
+  const trimmed = (body || '').trim();
+  if (!trimmed) return false;
+  const { error } = await supabase
+    .from('messages')
+    .insert({ sender_id: senderId, receiver_id: receiverId, body: trimmed.slice(0, 1000) });
+  return !error;
+}
+
+export async function getConversation(myId, friendId, limit = 200) {
+  const { data, error } = await supabase
+    .from('messages')
+    .select('id, sender_id, receiver_id, body, created_at, read_at')
+    .or(
+      `and(sender_id.eq.${myId},receiver_id.eq.${friendId}),and(sender_id.eq.${friendId},receiver_id.eq.${myId})`
+    )
+    .order('created_at', { ascending: true })
+    .limit(limit);
+  if (error) return [];
+  return data || [];
+}
+
+export async function markMessagesRead(myId, friendId) {
+  await supabase
+    .from('messages')
+    .update({ read_at: new Date().toISOString() })
+    .eq('receiver_id', myId)
+    .eq('sender_id', friendId)
+    .is('read_at', null);
+}
+
+export async function getUnreadCounts(myId) {
+  const { data, error } = await supabase
+    .from('messages')
+    .select('sender_id')
+    .eq('receiver_id', myId)
+    .is('read_at', null);
+  if (error || !data) return {};
+  const counts = {};
+  for (const row of data) {
+    counts[row.sender_id] = (counts[row.sender_id] || 0) + 1;
+  }
+  return counts;
+}
+
 export async function syncProfileToSupabase(userId, userData) {
   const { error } = await supabase.from('profiles').upsert({
     id: userId,

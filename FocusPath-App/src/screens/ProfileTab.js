@@ -107,6 +107,59 @@ export default function ProfileTab() {
           )}
         </View>
 
+        {(() => {
+          const currentStreak = user.streakDays || 0;
+          const longestStreak = Math.max(
+            user.longestStreak ?? 0,
+            currentStreak
+          );
+          const totalCleanDays = Math.max(
+            user.totalCleanDays ?? 0,
+            currentStreak
+          );
+          const moneySaved = Math.floor(totalCleanDays / 7) * 15;
+          const partialWeekDays = totalCleanDays % 7;
+
+          return (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Lifetime Stats</Text>
+
+              <View style={styles.lifetimeGrid}>
+                <View style={styles.lifetimeTile}>
+                  <Text style={styles.lifetimeNum}>{longestStreak}</Text>
+                  <Text style={styles.lifetimeLabel}>Longest streak</Text>
+                  <Text style={styles.lifetimeUnit}>
+                    day{longestStreak === 1 ? '' : 's'}
+                  </Text>
+                </View>
+                <View style={styles.lifetimeTile}>
+                  <Text style={styles.lifetimeNum}>{totalCleanDays}</Text>
+                  <Text style={styles.lifetimeLabel}>Total clean</Text>
+                  <Text style={styles.lifetimeUnit}>
+                    day{totalCleanDays === 1 ? '' : 's'}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.moneyCard}>
+                <View style={styles.moneyTop}>
+                  <Text style={styles.moneyEmoji}>💰</Text>
+                  <View style={styles.moneyTextWrap}>
+                    <Text style={styles.moneyAmount}>${moneySaved}</Text>
+                    <Text style={styles.moneyLabel}>Money saved</Text>
+                  </View>
+                </View>
+                <Text style={styles.moneyHint}>
+                  $15 added every 7 clean days
+                  {partialWeekDays > 0
+                    ? ` · ${7 - partialWeekDays} day${7 - partialWeekDays === 1 ? '' : 's'} until next $15`
+                    : ''}
+                </Text>
+              </View>
+            </View>
+          );
+        })()}
+
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
@@ -213,6 +266,71 @@ const styles = StyleSheet.create({
     color: Colors.textBright,
     fontSize: 14,
     fontWeight: '600',
+  },
+  lifetimeGrid: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 14,
+  },
+  lifetimeTile: {
+    flex: 1,
+    backgroundColor: Colors.bgInput,
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  lifetimeNum: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: Colors.textBright,
+  },
+  lifetimeLabel: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 4,
+    fontWeight: '600',
+  },
+  lifetimeUnit: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  moneyCard: {
+    backgroundColor: 'rgba(74, 222, 128, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(74, 222, 128, 0.3)',
+    borderRadius: 12,
+    padding: 14,
+  },
+  moneyTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  moneyEmoji: {
+    fontSize: 28,
+  },
+  moneyTextWrap: {
+    flex: 1,
+  },
+  moneyAmount: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: Colors.green,
+  },
+  moneyLabel: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  moneyHint: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    marginTop: 10,
   },
   logoutBtn: {
     borderWidth: 1,

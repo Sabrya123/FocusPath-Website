@@ -10,7 +10,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
 import { Colors } from '../utils/colors';
 import { supabase } from '../utils/supabase';
@@ -26,6 +26,7 @@ import {
   getUnseenAlerts,
   markAlertSeen,
   syncProfileToSupabase,
+  getUnreadCounts,
 } from '../utils/friends';
 
 const ALL_RANKS = [
@@ -45,6 +46,7 @@ function getRankName(points) {
 }
 
 export default function FriendsTab() {
+  const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [myCode, setMyCode] = useState('');
   const [codeInput, setCodeInput] = useState('');
@@ -52,6 +54,7 @@ export default function FriendsTab() {
   const [pending, setPending] = useState([]);
   const [incoming, setIncoming] = useState([]);
   const [alerts, setAlerts] = useState([]);
+  const [unreadCounts, setUnreadCounts] = useState({});
   const [userId, setUserId] = useState(null);
   const [copied, setCopied] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -119,6 +122,9 @@ export default function FriendsTab() {
 
       const unseenAlerts = await getUnseenAlerts(user.id);
       setAlerts(unseenAlerts);
+
+      const counts = await getUnreadCounts(user.id);
+      setUnreadCounts(counts);
     } catch (e) {
       // offline or not logged in
     }
@@ -353,12 +359,32 @@ export default function FriendsTab() {
                 </View>
               </View>
 
-              <TouchableOpacity
-                style={styles.alertBtn}
-                onPress={() => handleSendAlert(f.friendId, f.profile.name)}
-              >
-                <Text style={styles.alertBtnText}>🚨 I Need Support</Text>
-              </TouchableOpacity>
+              <View style={styles.actionRow}>
+                <TouchableOpacity
+                  style={styles.chatBtn}
+                  onPress={() =>
+                    navigation.navigate('Chat', {
+                      friendId: f.friendId,
+                      friendName: f.profile.name,
+                    })
+                  }
+                >
+                  <Text style={styles.chatBtnText}>💬 Chat</Text>
+                  {unreadCounts[f.friendId] > 0 && (
+                    <View style={styles.unreadBadge}>
+                      <Text style={styles.unreadBadgeText}>
+                        {unreadCounts[f.friendId]}
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.alertBtn, styles.alertBtnFlex]}
+                  onPress={() => handleSendAlert(f.friendId, f.profile.name)}
+                >
+                  <Text style={styles.alertBtnText}>🚨 I Need Support</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           ))
         )}
@@ -572,6 +598,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textSecondary,
   },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
   alertBtn: {
     backgroundColor: 'rgba(91, 168, 200, 0.15)',
     borderWidth: 1,
@@ -581,10 +612,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 12,
   },
+  alertBtnFlex: {
+    flex: 1,
+    marginTop: 0,
+  },
   alertBtnText: {
     color: Colors.redLight,
     fontWeight: '700',
     fontSize: 14,
+  },
+  chatBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.red,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 6,
+  },
+  chatBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  unreadBadge: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  unreadBadgeText: {
+    color: Colors.red,
+    fontSize: 11,
+    fontWeight: '800',
   },
   alertCard: {
     backgroundColor: 'rgba(91, 168, 200, 0.1)',
