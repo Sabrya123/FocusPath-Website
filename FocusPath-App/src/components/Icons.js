@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing } from 'react-native';
+import { Animated, Easing, Image } from 'react-native';
 import Svg, { Path, Circle, Rect, Line, G, Defs, LinearGradient, Stop, Polygon, Ellipse } from 'react-native-svg';
 import { Colors } from '../utils/colors';
 
@@ -505,26 +505,14 @@ export function FireIcon({ size = 20, color = Colors.red }) {
 
 // ===== RANK ICONS =====
 
-// Grounded - piece of earth/ground
+// Grounded - 3D floating island render
 export function GroundedRankIcon({ size = 32 }) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 32 32">
-      <Defs>
-        <LinearGradient id="grndGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-          <Stop offset="0%" stopColor="#8B6914" />
-          <Stop offset="40%" stopColor="#6B4E12" />
-          <Stop offset="100%" stopColor="#4A3510" />
-        </LinearGradient>
-      </Defs>
-      <Path d="M4 14C4 14 8 12 16 12C24 12 28 14 28 14V24C28 24 24 26 16 26C8 26 4 24 4 24V14Z" fill="url(#grndGrad)" />
-      <Path d="M4 14C4 14 8 12 16 12C24 12 28 14 28 14" stroke="#A0824A" strokeWidth={1.5} fill="none" />
-      <Path d="M4 14C4 14 8 16 16 16C24 16 28 14 28 14" fill="#6B8E23" opacity={0.9} />
-      <Path d="M10 15C10 13 12 12 12 12" stroke="#8FBC8F" strokeWidth={1} strokeLinecap="round" fill="none" opacity={0.6} />
-      <Path d="M20 14C20 12 22 12 22 12" stroke="#8FBC8F" strokeWidth={1} strokeLinecap="round" fill="none" opacity={0.6} />
-      <Circle cx="10" cy="20" r="1.5" fill="#A0824A" opacity={0.4} />
-      <Circle cx="20" cy="22" r="1" fill="#A0824A" opacity={0.3} />
-      <Circle cx="15" cy="21" r="0.8" fill="#A0824A" opacity={0.3} />
-    </Svg>
+    <Image
+      source={require('../../assets/rank-grounded.png')}
+      style={{ width: size, height: size }}
+      resizeMode="contain"
+    />
   );
 }
 
