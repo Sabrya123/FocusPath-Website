@@ -5,8 +5,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../utils/colors';
 import { REINFORCEMENTS, ALLAH_REMINDERS } from '../data/facts';
 import { StrengthIcon } from '../components/Icons';

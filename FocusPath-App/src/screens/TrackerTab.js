@@ -1,5 +1,9 @@
 import React, { useState, useCallback } from 'react';
-import { ScrollView, StyleSheet, SafeAreaView } from 'react-native';
+import {
+  ScrollView,
+  StyleSheet,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors } from '../utils/colors';
 import { getCurrentUser, getStreakInfo } from '../utils/storage';

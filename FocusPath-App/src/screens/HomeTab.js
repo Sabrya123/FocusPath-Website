@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   ScrollView,
   View,
@@ -6,17 +6,19 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   Alert,
   Modal,
+  Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Svg, { Circle, Rect, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Colors } from '../utils/colors';
 import { getCurrentUser, getSession, updateUser, getUsers, getDayOfYear } from '../utils/storage';
-import { StarIcon, CheckIcon, CategoryIcon, CloseIcon, DeleteIcon, MedalIcon, StrengthIcon, SparkleIcon, XIcon, RankIcon, FireIcon, MosqueIcon } from '../components/Icons';
+import { StarIcon, CheckIcon, CategoryIcon, CloseIcon, DeleteIcon, MedalIcon, StrengthIcon, SparkleIcon, XIcon, FireIcon, MosqueIcon } from '../components/Icons';
 import { NEGATIVE_FACTS, POSITIVE_FACTS, ALLAH_REMINDERS } from '../data/facts';
 import FactCard from '../components/FactCard';
+import RankScene from '../components/RankScene';
 import { syncProfileToSupabase } from '../utils/friends';
 import { supabase } from '../utils/supabase';
 
@@ -369,9 +371,10 @@ function RanksModal({ visible, onClose, points }) {
 
           <ScrollView showsVerticalScrollIndicator={false}>
             <View style={styles.currentRankBanner}>
-              <View style={styles.currentRankIcon}><RankIcon rank={currentRank.name} size={56} /></View>
+              <RankScene scene={currentRank.name.toLowerCase()} size={112} />
               <Text style={styles.currentRankName}>{currentRank.name}</Text>
               <Text style={styles.currentRankPts}>{points} pts</Text>
+              <Text style={styles.currentRankVibe}>{currentRank.vibe}</Text>
             </View>
 
             {nextRank && (
@@ -395,17 +398,21 @@ function RanksModal({ visible, onClose, points }) {
                 const isCurrent = i === currentIndex;
                 return (
                   <View key={r.name} style={[styles.rankRow, isCurrent && styles.rankRowCurrent]}>
-                    <View style={styles.rankRowIcon}><RankIcon rank={r.name} size={28} /></View>
+                    <View style={styles.rankRowIcon}>
+                      <RankScene scene={r.name.toLowerCase()} size={44} locked={!unlocked} />
+                    </View>
                     <View style={styles.rankRowInfo}>
-                      <Text style={[styles.rankRowName, unlocked && styles.rankRowNameUnlocked, isCurrent && styles.rankRowNameCurrent]}>
+                      <Text style={[
+                        styles.rankRowName,
+                        unlocked && styles.rankRowNameUnlocked,
+                        isCurrent && styles.rankRowNameCurrent,
+                      ]}>
                         {r.name}
                       </Text>
                       <Text style={styles.rankRowVibe}>{r.vibe}</Text>
                       <Text style={styles.rankRowPts}>{r.minPoints} pts</Text>
                     </View>
-                    {unlocked && (
-                      <Text style={styles.rankRowCheck}>✓</Text>
-                    )}
+                    {unlocked && <Text style={styles.rankRowCheck}>✓</Text>}
                   </View>
                 );
               })}
@@ -429,7 +436,7 @@ function PointsInfoCard({ points, streakDays, onPress }) {
         <Text style={styles.rankTap}>Tap to view all ›</Text>
       </View>
       <View style={styles.rankDisplay}>
-        <RankIcon rank={rank.name} size={32} />
+        <RankScene scene={rank.name.toLowerCase()} size={44} />
         <Text style={styles.rankText}>{rank.name}</Text>
       </View>
       {nextRank && (
@@ -882,8 +889,16 @@ export default function HomeTab({ navigation }) {
             </View>
           )}
 
-          <PointsInfoCard points={points} streakDays={streakDays} onPress={() => setShowRanks(true)} />
-          <RanksModal visible={showRanks} onClose={() => setShowRanks(false)} points={points} />
+          <PointsInfoCard
+            points={points}
+            streakDays={streakDays}
+            onPress={() => setShowRanks(true)}
+          />
+          <RanksModal
+            visible={showRanks}
+            onClose={() => setShowRanks(false)}
+            points={points}
+          />
           <MotivationCard identity={identity} />
         </View>
       </ScrollView>
@@ -1512,6 +1527,8 @@ const styles = StyleSheet.create({
   },
 
   // Points / Rank
+  // Grounded sky variants (mirror Sunrise for the Grounded rank card)
+  // Elevated mountain variants (mirror Sky for the Elevated rank card)
   rankHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1570,6 +1587,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     maxHeight: '85%',
+    overflow: 'hidden',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1612,6 +1630,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textSecondary,
     marginTop: 4,
+  },
+  currentRankVibe: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 8,
+    paddingHorizontal: 24,
+    lineHeight: 19,
   },
   progressSection: {
     marginBottom: 24,
@@ -1665,7 +1691,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgInput,
   },
   rankRowIcon: {
-    width: 28,
+    width: 44,
     marginRight: 14,
   },
   rankRowInfo: {
@@ -1698,6 +1724,8 @@ const styles = StyleSheet.create({
     color: Colors.green,
     fontWeight: '700',
   },
+  // Grounded sky variants for the rank-list row
+  // Elevated mountain variants for the rank-list row
 
   // Identity
   identityText: {

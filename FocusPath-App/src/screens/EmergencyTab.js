@@ -5,21 +5,23 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
-  SafeAreaView,
+  Easing,
   Dimensions,
 } from 'react-native';
-import Svg, { Path, Polygon, Rect, Defs, LinearGradient, Stop } from 'react-native-svg';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Path, Circle, Ellipse, G, Defs, ClipPath, LinearGradient, RadialGradient, Stop } from 'react-native-svg';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors } from '../utils/colors';
 import { getCurrentUser } from '../utils/storage';
+import * as Haptics from 'expo-haptics';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const BREATHE_IN = 4000;
 const TOTAL_SECONDS = 120;
 
-// Canvas size for the SVG
-const W = Math.min(SCREEN_W * 0.88, 360);
-const H = W * 1.15;
+// The button is one circular medallion, sized off the screen width.
+const BTN = Math.min(SCREEN_W * 0.66, 280);
+const HALO = BTN * 1.5;
 
 export default function EmergencyTab() {
   const [phase, setPhase] = useState('closed');
@@ -27,8 +29,10 @@ export default function EmergencyTab() {
   const [timeLeft, setTimeLeft] = useState(TOTAL_SECONDS);
   const [user, setUser] = useState(null);
 
-  const caseAnim = useRef(new Animated.Value(0)).current;
-  const buttonPress = useRef(new Animated.Value(0)).current;
+  const pressAnim = useRef(new Animated.Value(0)).current;
+  const haloAnim = useRef(new Animated.Value(0)).current;
+  const flashAnim = useRef(new Animated.Value(0)).current;
+  const boltFlash = useRef(new Animated.Value(0)).current;
   const breathScale = useRef(new Animated.Value(1)).current;
   const sceneOpacity = useRef(new Animated.Value(1)).current;
   const breatheOpacity = useRef(new Animated.Value(0)).current;
@@ -40,20 +44,67 @@ export default function EmergencyTab() {
   async function loadUser() { setUser(await getCurrentUser()); }
   useEffect(() => () => stopBreathing(), []);
 
-  function openCase() {
-    Animated.spring(caseAnim, { toValue: 1, friction: 9, tension: 18, useNativeDriver: true }).start();
-    setPhase('open');
+  // Slow halo breath while the button is waiting to be pressed. Runs on the
+  // native driver (transform + opacity only) so it never competes with JS.
+  useEffect(() => {
+    if (phase !== 'closed') return undefined;
+    haloAnim.setValue(0);
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(haloAnim, {
+          toValue: 1, duration: 1600, easing: Easing.inOut(Easing.quad), useNativeDriver: true,
+        }),
+        Animated.timing(haloAnim, {
+          toValue: 0, duration: 1600, easing: Easing.inOut(Easing.quad), useNativeDriver: true,
+        }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [phase]);
+
+  // Press and release are separate so the button tracks your finger instead of
+  // firing a fixed-length sequence after you let go.
+  function onPressIn() {
+    Animated.timing(pressAnim, {
+      toValue: 1, duration: 90, easing: Easing.out(Easing.quad), useNativeDriver: true,
+    }).start();
   }
 
-  function pressButton() {
-    Animated.sequence([
-      Animated.timing(buttonPress, { toValue: 1, duration: 100, useNativeDriver: true }),
-      Animated.timing(buttonPress, { toValue: 0, duration: 140, useNativeDriver: true }),
+  function onPressOut() {
+    Animated.spring(pressAnim, {
+      toValue: 0, friction: 5, tension: 170, useNativeDriver: true,
+    }).start();
+  }
+
+  function activate() {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+    flashAnim.setValue(0);
+    boltFlash.setValue(0);
+    Animated.parallel([
+      // The strike lands first, then the storm clears behind it.
+      Animated.sequence([
+        Animated.timing(boltFlash, {
+          toValue: 1, duration: 70, easing: Easing.out(Easing.quad), useNativeDriver: true,
+        }),
+        Animated.timing(boltFlash, {
+          toValue: 0, duration: 260, easing: Easing.in(Easing.quad), useNativeDriver: true,
+        }),
+      ]),
+      Animated.timing(flashAnim, {
+        toValue: 1, duration: 620, easing: Easing.out(Easing.quad), useNativeDriver: true,
+      }),
+      Animated.sequence([
+        Animated.delay(160),
+        Animated.timing(sceneOpacity, {
+          toValue: 0, duration: 320, easing: Easing.inOut(Easing.quad), useNativeDriver: true,
+        }),
+      ]),
     ]).start(() => {
-      Animated.parallel([
-        Animated.timing(sceneOpacity, { toValue: 0, duration: 350, useNativeDriver: true }),
-        Animated.timing(breatheOpacity, { toValue: 1, duration: 350, delay: 250, useNativeDriver: true }),
-      ]).start(() => startBreathing());
+      startBreathing();
+      Animated.timing(breatheOpacity, {
+        toValue: 1, duration: 360, easing: Easing.out(Easing.quad), useNativeDriver: true,
+      }).start();
     });
   }
 
@@ -83,8 +134,9 @@ export default function EmergencyTab() {
 
   function reset() {
     stopBreathing();
-    caseAnim.setValue(0);
-    buttonPress.setValue(0);
+    pressAnim.setValue(0);
+    flashAnim.setValue(0);
+    boltFlash.setValue(0);
     breathScale.setValue(1);
     sceneOpacity.setValue(1);
     breatheOpacity.setValue(0);
@@ -95,9 +147,12 @@ export default function EmergencyTab() {
   const fmt = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
   const hasAllah = user?.motivations?.includes('allah');
 
-  const btnTopScale = buttonPress.interpolate({ inputRange: [0, 1], outputRange: [1, 0.95] });
-  const btnSideScale = buttonPress.interpolate({ inputRange: [0, 1], outputRange: [1, 0.35] });
-  const caseSwing = caseAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-140deg'] });
+  const capScale = pressAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0.955] });
+  const capLift = pressAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 3] });
+  const haloScale = haloAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.13] });
+  const haloOpacity = haloAnim.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0.14] });
+  const flashScale = flashAnim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1.9] });
+  const flashOpacity = flashAnim.interpolate({ inputRange: [0, 1], outputRange: [0.6, 0] });
 
   if (phase === 'complete') {
     return (
@@ -138,312 +193,140 @@ export default function EmergencyTab() {
     );
   }
 
-  // ============================================
-  // ISOMETRIC COORDINATES for the platform
-  // ============================================
-  // The platform is drawn in SVG as a 3D box.
-  // Top face is a parallelogram, front face below it.
-  const cx = W / 2;
-  const topY = H * 0.22;    // where top face starts
-  const topW = W * 0.82;    // width of top face
-  const topH = W * 0.52;    // depth of top face (foreshortened)
-  const frontH = W * 0.16;  // front face height (thickness)
-  const stripeW = topW * 0.11; // hazard stripe width
-  const skew = W * 0.06;    // how much the top face skews for perspective
-
-  // Top face corners (trapezoid — wider at bottom, narrower at top)
-  const tl = { x: cx - topW / 2 + skew, y: topY };
-  const tr = { x: cx + topW / 2 - skew, y: topY };
-  const br = { x: cx + topW / 2, y: topY + topH };
-  const bl = { x: cx - topW / 2, y: topY + topH };
-
-  // Front face (below top face bottom edge)
-  const fbl = { x: bl.x, y: bl.y + frontH };
-  const fbr = { x: br.x, y: br.y + frontH };
-
-  // Inner platform (dark area)
-  const inl = lerp(tl, bl, stripeW / topH);
-  const inr = lerp(tr, br, stripeW / topH);
-  const inbl2 = lerp(bl, tl, stripeW / topH);
-  const inbr2 = lerp(br, tr, stripeW / topH);
-  // Also inset horizontally
-  const innerTL = offsetH(inl, inr, stripeW / topW);
-  const innerTR = offsetH(inr, inl, stripeW / topW);
-  const innerBL = offsetH(inbl2, inbr2, stripeW / topW);
-  const innerBR = offsetH(inbr2, inbl2, stripeW / topW);
-
-  // Button center on top face
-  const btnCx = cx;
-  const btnCy = topY + topH * 0.48;
-  const btnRx = topW * 0.22;
-  const btnRy = topH * 0.22;
-  const btnSideH2 = W * 0.08;
-
-  // Glass case dimensions on top face
-  const gw = topW * 0.42;
-  const gh = topH * 0.56;
-  const gfh = topH * 0.48; // glass front panel height
-  const gth = topH * 0.18; // glass top panel depth
-
-  // Generate hazard stripe polygons for top face edges
-  const topStripes = generateStripes(tl, tr, bl, br, stripeW, 14);
-  // Front face stripes
-  const frontStripes = generateFrontStripes(bl, br, fbl, fbr, 14);
-
   return (
     <SafeAreaView style={styles.safe}>
       <Animated.View style={[styles.center, { opacity: sceneOpacity }]}>
         <Text style={styles.title}>EMERGENCY</Text>
 
         <View style={styles.scene}>
-          {/* SVG draws the 3D platform */}
-          <Svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
-            <Defs>
-              <LinearGradient id="btnGrad" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor="#f87171" />
-                <Stop offset="0.4" stopColor="#ef4444" />
-                <Stop offset="1" stopColor="#dc2626" />
-              </LinearGradient>
-              <LinearGradient id="btnSide" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor="#b91c1c" />
-                <Stop offset="1" stopColor="#7f1d1d" />
-              </LinearGradient>
-              <LinearGradient id="frontGrad" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor="#2d3a4a" />
-                <Stop offset="1" stopColor="#1a2332" />
-              </LinearGradient>
-              <LinearGradient id="glassGrad" x1="0" y1="0" x2="0.3" y2="1">
-                <Stop offset="0" stopColor="rgba(180,220,245,0.18)" />
-                <Stop offset="1" stopColor="rgba(140,200,235,0.06)" />
-              </LinearGradient>
-              <LinearGradient id="glassSide" x1="0" y1="0" x2="1" y2="0">
-                <Stop offset="0" stopColor="rgba(160,210,240,0.12)" />
-                <Stop offset="1" stopColor="rgba(120,190,225,0.04)" />
-              </LinearGradient>
-            </Defs>
-
-            {/* ===== FRONT FACE ===== */}
-            <Polygon
-              points={`${bl.x},${bl.y} ${br.x},${br.y} ${fbr.x},${fbr.y} ${fbl.x},${fbl.y}`}
-              fill="url(#frontGrad)"
-              stroke="#151d2b"
-              strokeWidth={1.5}
-            />
-            {/* Front face hazard stripes */}
-            {frontStripes.map((pts, i) => (
-              <Polygon key={`fs${i}`} points={pts} fill={i % 2 === 0 ? '#ca8a04' : '#1c1917'} />
-            ))}
-
-            {/* ===== TOP FACE ===== */}
-            <Polygon
-              points={`${tl.x},${tl.y} ${tr.x},${tr.y} ${br.x},${br.y} ${bl.x},${bl.y}`}
-              fill="#374151"
-              stroke="#1f2937"
-              strokeWidth={1.5}
-            />
-
-            {/* Top face hazard stripes */}
-            {topStripes.map((pts, i) => (
-              <Polygon key={`ts${i}`} points={pts} fill={i % 2 === 0 ? '#eab308' : '#292524'} />
-            ))}
-
-            {/* Inner dark platform */}
-            <Polygon
-              points={`${innerTL.x},${innerTL.y} ${innerTR.x},${innerTR.y} ${innerBR.x},${innerBR.y} ${innerBL.x},${innerBL.y}`}
-              fill="#1a2234"
-              stroke="#2a3650"
-              strokeWidth={1.5}
-            />
-
-            {/* ===== BUTTON SHADOW ===== */}
-            <Rect
-              x={btnCx - btnRx * 1.05}
-              y={btnCy + btnSideH2 - 2}
-              rx={btnRx}
-              ry={btnRy * 0.4}
-              width={btnRx * 2.1}
-              height={btnRy * 0.8}
-              fill="rgba(0,0,0,0.3)"
-            />
-
-            {/* ===== BUTTON CYLINDER SIDE ===== */}
-            <Rect
-              x={btnCx - btnRx}
-              y={btnCy}
-              rx={4}
-              ry={0}
-              width={btnRx * 2}
-              height={btnSideH2}
-              fill="url(#btnSide)"
-              stroke="#6b1010"
-              strokeWidth={1}
-            />
-            {/* Rounded bottom of cylinder */}
-            <Rect
-              x={btnCx - btnRx}
-              y={btnCy + btnSideH2 - btnRy * 0.5}
-              rx={btnRx}
-              ry={btnRy * 0.5}
-              width={btnRx * 2}
-              height={btnRy}
-              fill="url(#btnSide)"
-            />
-
-            {/* ===== BUTTON TOP FACE (ellipse) ===== */}
-            <Rect
-              x={btnCx - btnRx}
-              y={btnCy - btnRy}
-              rx={btnRx}
-              ry={btnRy}
-              width={btnRx * 2}
-              height={btnRy * 2}
-              fill="url(#btnGrad)"
-              stroke="#fca5a5"
-              strokeWidth={2}
-            />
-            {/* Highlight on button */}
-            <Rect
-              x={btnCx - btnRx * 0.55}
-              y={btnCy - btnRy * 0.65}
-              rx={btnRx * 0.45}
-              ry={btnRy * 0.35}
-              width={btnRx * 0.9}
-              height={btnRy * 0.6}
-              fill="rgba(255,255,255,0.2)"
-            />
-          </Svg>
-
-          {/* ===== GLASS CASE (RN Views for animation) ===== */}
+          {/* Halo — a slow breath that invites the press. Its own layer so the
+              loop never has to restart when the button is pressed. */}
           <Animated.View
-            style={[styles.glassAnchor, {
-              top: topY - gth * 0.2,
-              left: (W - gw - 20) / 2,
-              width: gw + 20,
-              height: gfh + gth,
-              transform: [
-                { perspective: 500 },
-                { rotateX: caseSwing },
-              ],
-            }]}
-            pointerEvents={phase === 'closed' ? 'auto' : 'none'}
+            pointerEvents="none"
+            style={[styles.halo, { opacity: haloOpacity, transform: [{ scale: haloScale }] }]}
           >
-            <TouchableOpacity
-              activeOpacity={0.97}
-              onPress={phase === 'closed' ? openCase : undefined}
-              style={{ flex: 1 }}
-            >
-              {/* Top panel */}
-              <View style={[styles.gTop, { height: gth }]} />
-              {/* Front panel */}
-              <View style={[styles.gFront, { height: gfh }]}>
-                <View style={styles.gShine1} />
-                <View style={styles.gShine2} />
-              </View>
-              {/* Left side */}
-              <View style={styles.gSideL} />
-              {/* Right side */}
-              <View style={styles.gSideR} />
-            </TouchableOpacity>
+            <Svg width={HALO} height={HALO} viewBox="0 0 200 200">
+              <Defs>
+                <RadialGradient id="haloG" cx="50%" cy="50%" r="50%">
+                  <Stop offset="55%" stopColor="#ffc247" stopOpacity="0" />
+                  <Stop offset="78%" stopColor="#ffc247" stopOpacity="0.55" />
+                  <Stop offset="100%" stopColor="#ffc247" stopOpacity="0" />
+                </RadialGradient>
+              </Defs>
+              <Circle cx={100} cy={100} r={100} fill="url(#haloG)" />
+            </Svg>
           </Animated.View>
 
-          {/* Invisible button press area over the SVG button */}
-          {phase === 'open' && (
+          {/* Confirmation ring, fired on activate. */}
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.flash, { opacity: flashOpacity, transform: [{ scale: flashScale }] }]}
+          />
+
+          <Animated.View style={{ transform: [{ scale: capScale }, { translateY: capLift }] }}>
             <TouchableOpacity
-              activeOpacity={0.95}
-              onPress={pressButton}
-              style={[styles.btnHitArea, {
-                top: btnCy - btnRy - 10,
-                left: (W / 2) - btnRx - 10,
-                width: btnRx * 2 + 20,
-                height: btnRy * 2 + btnSideH2 + 20,
-              }]}
-            />
-          )}
+              activeOpacity={1}
+              onPressIn={onPressIn}
+              onPressOut={onPressOut}
+              onPress={activate}
+              accessibilityRole="button"
+              accessibilityLabel="Start a two minute craving timer"
+            >
+              <Svg width={BTN} height={BTN} viewBox="0 0 200 200">
+                <Defs>
+                  {/* Bezel is lit from the upper left, like every medallion. */}
+                  <LinearGradient id="bezel" x1="0.15" y1="0" x2="0.85" y2="1">
+                    <Stop offset="0" stopColor="#f2f8fc" />
+                    <Stop offset="0.55" stopColor="#cfe1ee" />
+                    <Stop offset="1" stopColor="#a9c6da" />
+                  </LinearGradient>
+                  {/* The well inverts that gradient, which is what reads as a
+                      recess rather than another dome. */}
+                  <LinearGradient id="well" x1="0.2" y1="0" x2="0.8" y2="1">
+                    <Stop offset="0" stopColor="#9dbdd3" />
+                    <Stop offset="1" stopColor="#dcebf5" />
+                  </LinearGradient>
+                  <RadialGradient id="storm" cx="50%" cy="50%" r="52%" fx="34%" fy="26%">
+                    <Stop offset="0" stopColor="#8ba1b6" />
+                    <Stop offset="0.55" stopColor="#5c7188" />
+                    <Stop offset="1" stopColor="#36485b" />
+                  </RadialGradient>
+                  <RadialGradient id="puff" cx="50%" cy="50%" r="50%" fx="36%" fy="26%">
+                    <Stop offset="0" stopColor="#7a90a6" />
+                    <Stop offset="100%" stopColor="#4a5e73" />
+                  </RadialGradient>
+                  <RadialGradient id="capGloss" cx="50%" cy="50%" r="50%" fx="32%" fy="24%">
+                    <Stop offset="0" stopColor="#ffffff" stopOpacity="0.4" />
+                    <Stop offset="45%" stopColor="#ffffff" stopOpacity="0.08" />
+                    <Stop offset="70%" stopColor="#ffffff" stopOpacity="0" />
+                  </RadialGradient>
+                  <RadialGradient id="boltGlow" cx="50%" cy="50%" r="50%">
+                    <Stop offset="0" stopColor="#ffe07a" stopOpacity="0.55" />
+                    <Stop offset="100%" stopColor="#ffd35e" stopOpacity="0" />
+                  </RadialGradient>
+                  <ClipPath id="capClip">
+                    <Circle cx={100} cy={100} r={68} />
+                  </ClipPath>
+                </Defs>
+
+                <Circle cx={100} cy={100} r={94} fill="url(#bezel)" />
+                <Circle cx={100} cy={100} r={94} fill="none" stroke="#8fb2c9" strokeWidth={1.5} opacity={0.5} />
+
+                <Circle cx={100} cy={100} r={78} fill="url(#well)" />
+                <Circle cx={100} cy={100} r={78} fill="none" stroke="#7ea3bd" strokeWidth={1.5} opacity={0.45} />
+
+                {/* Contact shadow so the cap sits in the well. */}
+                <Ellipse cx={100} cy={106} rx={70} ry={68} fill="#3c5163" opacity={0.32} />
+
+                <Circle cx={100} cy={100} r={68} fill="url(#storm)" />
+
+                {/* Storm lobes, shaded so they read as volumes not flat discs. */}
+                <G clipPath="url(#capClip)">
+                  <Circle cx={68} cy={128} r={28} fill="url(#puff)" />
+                  <Circle cx={104} cy={138} r={32} fill="url(#puff)" />
+                  <Circle cx={136} cy={128} r={24} fill="url(#puff)" />
+                </G>
+
+                <Circle cx={100} cy={100} r={44} fill="url(#boltGlow)" />
+                <Path d="M108 62 L88 100 L102 100 L94 138 L118 94 L104 94 Z" fill="#ffd35e" />
+
+                <Circle cx={100} cy={100} r={68} fill="url(#capGloss)" />
+                <Circle cx={100} cy={100} r={68} fill="none" stroke="#8ba3b8" strokeWidth={1.5} opacity={0.6} />
+
+                {/* Specular catch on the lit side, faint bounce opposite. */}
+                <Path
+                  d="M45.5 80.2 A58 58 0 0 1 119.8 45.5"
+                  fill="none"
+                  stroke="#ffffff"
+                  strokeWidth={5}
+                  strokeLinecap="round"
+                  opacity={0.3}
+                />
+                <Path
+                  d="M154.5 119.8 A58 58 0 0 1 119.8 154.5"
+                  fill="none"
+                  stroke="#ffffff"
+                  strokeWidth={3.5}
+                  strokeLinecap="round"
+                  opacity={0.12}
+                />
+              </Svg>
+              <Animated.View
+                pointerEvents="none"
+                style={[styles.strike, { opacity: boltFlash }]}
+              />
+            </TouchableOpacity>
+          </Animated.View>
         </View>
 
         <Text style={styles.infoText}>
           Cravings go away after 2 minutes.{'\n'}Hit the button and distract yourself.
         </Text>
 
-        {phase === 'closed' && <Text style={styles.hint}>Lift the glass case</Text>}
-        {phase === 'open' && (
-          <Text style={[styles.hint, styles.hintActive]}>Press the button!</Text>
-        )}
+        <Text style={styles.hint}>Tap to start your two minutes</Text>
       </Animated.View>
     </SafeAreaView>
   );
-}
-
-// ===== HELPER FUNCTIONS =====
-function lerp(a, b, t) {
-  return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
-}
-
-function offsetH(p, other, t) {
-  return { x: p.x + (other.x - p.x) * t, y: p.y + (other.y - p.y) * t };
-}
-
-function generateStripes(tl, tr, bl, br, stripeW, count) {
-  const polys = [];
-  // Top edge stripes
-  for (let i = 0; i < count; i++) {
-    const t0 = i / count;
-    const t1 = (i + 1) / count;
-    const p1 = lerp(tl, tr, t0);
-    const p2 = lerp(tl, tr, t1);
-    const frac = stripeW / Math.hypot(bl.x - tl.x, bl.y - tl.y);
-    const p3 = lerp(lerp(tl, tr, t1), lerp(bl, br, t1), frac);
-    const p4 = lerp(lerp(tl, tr, t0), lerp(bl, br, t0), frac);
-    polys.push(`${p1.x},${p1.y} ${p2.x},${p2.y} ${p3.x},${p3.y} ${p4.x},${p4.y}`);
-  }
-  // Bottom edge stripes
-  for (let i = 0; i < count; i++) {
-    const t0 = i / count;
-    const t1 = (i + 1) / count;
-    const p1 = lerp(bl, br, t0);
-    const p2 = lerp(bl, br, t1);
-    const frac = stripeW / Math.hypot(bl.x - tl.x, bl.y - tl.y);
-    const p3 = lerp(lerp(bl, br, t1), lerp(tl, tr, t1), frac);
-    const p4 = lerp(lerp(bl, br, t0), lerp(tl, tr, t0), frac);
-    polys.push(`${p1.x},${p1.y} ${p2.x},${p2.y} ${p3.x},${p3.y} ${p4.x},${p4.y}`);
-  }
-  // Left edge stripes
-  for (let i = 0; i < 8; i++) {
-    const t0 = i / 8;
-    const t1 = (i + 1) / 8;
-    const p1 = lerp(tl, bl, t0);
-    const p2 = lerp(tl, bl, t1);
-    const frac = stripeW / Math.hypot(tr.x - tl.x, tr.y - tl.y);
-    const p3 = lerp(lerp(tl, bl, t1), lerp(tr, br, t1), frac);
-    const p4 = lerp(lerp(tl, bl, t0), lerp(tr, br, t0), frac);
-    polys.push(`${p1.x},${p1.y} ${p2.x},${p2.y} ${p3.x},${p3.y} ${p4.x},${p4.y}`);
-  }
-  // Right edge stripes
-  for (let i = 0; i < 8; i++) {
-    const t0 = i / 8;
-    const t1 = (i + 1) / 8;
-    const p1 = lerp(tr, br, t0);
-    const p2 = lerp(tr, br, t1);
-    const frac = stripeW / Math.hypot(tr.x - tl.x, tr.y - tl.y);
-    const p3 = lerp(lerp(tr, br, t1), lerp(tl, bl, t1), frac);
-    const p4 = lerp(lerp(tr, br, t0), lerp(tl, bl, t0), frac);
-    polys.push(`${p1.x},${p1.y} ${p2.x},${p2.y} ${p3.x},${p3.y} ${p4.x},${p4.y}`);
-  }
-  return polys;
-}
-
-function generateFrontStripes(bl, br, fbl, fbr, count) {
-  const polys = [];
-  for (let i = 0; i < count; i++) {
-    const t0 = i / count;
-    const t1 = (i + 1) / count;
-    const p1 = lerp(bl, br, t0);
-    const p2 = lerp(bl, br, t1);
-    const p3 = lerp(fbl, fbr, t1);
-    const p4 = lerp(fbl, fbr, t0);
-    polys.push(`${p1.x},${p1.y} ${p2.x},${p2.y} ${p3.x},${p3.y} ${p4.x},${p4.y}`);
-  }
-  return polys;
 }
 
 const styles = StyleSheet.create({
@@ -452,58 +335,29 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: '800', color: Colors.redLight, letterSpacing: 6, marginBottom: 16 },
 
   scene: {
-    width: W,
-    height: H,
+    width: HALO,
+    height: HALO,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-
-  // Glass case
-  glassAnchor: {
+  halo: {
     position: 'absolute',
-    zIndex: 20,
-    transformOrigin: 'top center',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  gTop: {
-    backgroundColor: 'rgba(160, 220, 245, 0.10)',
-    borderWidth: 2,
-    borderColor: 'rgba(140, 210, 240, 0.28)',
-    borderBottomWidth: 0,
-  },
-  gFront: {
-    backgroundColor: 'rgba(140, 200, 235, 0.08)',
-    borderWidth: 2,
-    borderColor: 'rgba(120, 190, 225, 0.25)',
-    borderTopWidth: 0,
-    overflow: 'hidden',
-  },
-  gShine1: {
-    position: 'absolute', top: '4%', left: '10%',
-    width: 4, height: '80%',
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderRadius: 2,
-  },
-  gShine2: {
-    position: 'absolute', top: '8%', left: '18%',
-    width: 2, height: '60%',
-    backgroundColor: 'rgba(255,255,255,0.10)',
-    borderRadius: 1,
-  },
-  gSideL: {
-    position: 'absolute', top: 0, left: -8, bottom: 0, width: 10,
-    backgroundColor: 'rgba(150, 210, 235, 0.07)',
-    borderLeftWidth: 2,
-    borderColor: 'rgba(130, 200, 230, 0.22)',
-  },
-  gSideR: {
-    position: 'absolute', top: 0, right: -8, bottom: 0, width: 10,
-    backgroundColor: 'rgba(110, 170, 200, 0.04)',
-    borderRightWidth: 2,
-    borderColor: 'rgba(100, 160, 190, 0.18)',
-  },
-
-  // Invisible hit area for button press
-  btnHitArea: {
+  strike: {
     position: 'absolute',
-    zIndex: 25,
+    top: 0, left: 0, right: 0, bottom: 0,
+    borderRadius: BTN / 2,
+    backgroundColor: '#fff6d8',
+  },
+  flash: {
+    position: 'absolute',
+    width: BTN,
+    height: BTN,
+    borderRadius: BTN / 2,
+    borderWidth: 2,
+    borderColor: '#ffd35e',
   },
 
   // Text
@@ -512,7 +366,6 @@ const styles = StyleSheet.create({
     textAlign: 'center', lineHeight: 24, marginTop: 16,
   },
   hint: { color: Colors.textMuted, fontSize: 13, marginTop: 10, letterSpacing: 0.5 },
-  hintActive: { color: Colors.redLight, fontWeight: '600' },
 
   // Breathing
   breatheHeading: { fontSize: 24, fontWeight: '800', color: Colors.textBright, marginBottom: 8 },
