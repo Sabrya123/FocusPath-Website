@@ -35,11 +35,38 @@ export default function LoginScreen({ navigation }) {
       return;
     }
 
-    // Sign into Supabase
-    await supabase.auth.signInWithPassword({
-      email: trimmedEmail,
-      password: password,
-    }).catch(() => {});
+    // Sign into Supabase. Local auth above is the source of truth for getting
+    // into the app, so a failure here must not block login — but it must not be
+    // invisible either: without a Supabase session, friends, chat and the AI
+    // coach all silently 401.
+    const { error: sbError } = await supabase.auth
+      .signInWithPassword({ email: trimmedEmail, password })
+      .catch((e) => ({ error: e }));
+
+    if (sbError) {
+      // Accounts made before Supabase auth was wired in — or whose signUp
+      // silently failed — exist locally but not in Supabase, so sign-in returns
+      // invalid_credentials. The local password was already verified above, so
+      // create the Supabase account now. Without a session, friends, chat and
+      // the AI coach all 401.
+      const { error: signUpErr } = await supabase.auth
+        .signUp({ email: trimmedEmail, password })
+        .catch((e) => ({ error: e }));
+
+      if (signUpErr) {
+        // Two very different failures land here, so name them. "already
+        // registered" means the Supabase account exists with a DIFFERENT
+        // password than the local one — the app can't repair that itself, it
+        // needs a password reset on the Supabase side.
+        const mismatch = /already registered|already exists/i.test(signUpErr.message);
+        console.warn(
+          mismatch
+            ? `[supabase] ${trimmedEmail} exists in Supabase with a different password. ` +
+              'Reset it in Dashboard > Authentication > Users so it matches the app password.'
+            : `[supabase] no session — sign-in: ${sbError.message} | sign-up: ${signUpErr.message}`
+        );
+      }
+    }
 
     await setSession(trimmedEmail);
     const user = users[trimmedEmail];

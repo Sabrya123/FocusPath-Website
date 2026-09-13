@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Colors } from '../utils/colors';
 import { getCurrentUser, clearSession, getStreakInfo } from '../utils/storage';
+import { supabase } from '../utils/supabase';
 
 export default function ProfileTab() {
   const [user, setUser] = useState(null);
@@ -38,6 +39,10 @@ export default function ProfileTab() {
         text: 'Log Out',
         style: 'destructive',
         onPress: async () => {
+          // Clear the Supabase session too. Without this it outlives the local
+          // logout, so the next person to sign in on this device inherits the
+          // previous account's friends, chats and coach context.
+          await supabase.auth.signOut().catch(() => {});
           await clearSession();
           navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
         },
@@ -49,6 +54,17 @@ export default function ProfileTab() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <View style={styles.topBar}>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => navigation.goBack()}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+        >
+          <Text style={styles.backText}>‹</Text>
+        </TouchableOpacity>
+        <Text style={styles.topBarTitle}>Profile</Text>
+      </View>
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
@@ -170,7 +186,31 @@ export default function ProfileTab() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.bg },
-  scroll: { padding: 20, paddingBottom: 100 },
+  // No tab bar on this screen any more, so no extra room needed for one.
+  scroll: { padding: 20, paddingBottom: 40 },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backText: {
+    fontSize: 32,
+    color: Colors.red,
+    fontWeight: '300',
+    marginTop: -4,
+  },
+  topBarTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: Colors.textBright,
+  },
   header: {
     alignItems: 'center',
     marginBottom: 24,

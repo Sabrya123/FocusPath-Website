@@ -25,6 +25,12 @@
           "backgroundColor": "#000000"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "69ed3ffc-a03c-4469-bfac-9a6872fd1923"
+      }
+    },
+    "owner": "asabry1"
   }
 }

@@ -4,10 +4,17 @@
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
     "start": "expo start",
+    "start:clear": "expo start --clear",
     "tunnel": "expo start --tunnel",
+    "tunnel:clear": "expo start --tunnel --clear",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "doctor": "expo-doctor",
+    "reinstall": "node scripts/clean-install.js",
+    "netcheck": "node scripts/net-check.js",
+    "prestart": "node scripts/check-login.js",
+    "pretunnel": "node scripts/check-login.js"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",

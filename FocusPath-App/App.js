@@ -7,7 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { getCurrentUser } from './src/utils/storage';
 import { Colors } from './src/utils/colors';
 
-import { HomeIcon, SparkleIcon, EmergencyIcon, FriendsIcon, ProfileIcon } from './src/components/Icons';
+import { HomeIcon, SparkleIcon, EmergencyIcon, FriendsIcon, DopamineIcon } from './src/components/Icons';
 import LoginScreen from './src/screens/LoginScreen';
 import SignupScreen from './src/screens/SignupScreen';
 import IdentityScreen from './src/screens/IdentityScreen';
@@ -16,6 +16,7 @@ import HomeTab from './src/screens/HomeTab';
 import AskAITab from './src/screens/AskAITab';
 import EmergencyTab from './src/screens/EmergencyTab';
 import FriendsTab from './src/screens/FriendsTab';
+import DopamineTab from './src/screens/DopamineTab';
 import ProfileTab from './src/screens/ProfileTab';
 import AddHabitScreen from './src/screens/AddHabitScreen';
 import HabitSessionScreen from './src/screens/HabitSessionScreen';
@@ -31,7 +32,7 @@ function TabIcon({ label, focused }) {
     'Ask AI': <SparkleIcon size={24} color={color} />,
     Emergency: <EmergencyIcon size={28} color={color} focused={focused} />,
     Friends: <FriendsIcon size={24} color={color} focused={focused} />,
-    Profile: <ProfileIcon size={24} color={color} focused={focused} />,
+    Dopamine: <DopamineIcon size={24} color={color} focused={focused} />,
   };
   return (
     <View style={styles.tabIconWrap}>
@@ -68,7 +69,7 @@ function MainTabs() {
         options={{ tabBarLabel: () => null }}
       />
       <Tab.Screen name="Friends" component={FriendsTab} />
-      <Tab.Screen name="Profile" component={ProfileTab} />
+      <Tab.Screen name="Dopamine" component={DopamineTab} />
     </Tab.Navigator>
   );
 }
@@ -141,6 +142,12 @@ export default function App() {
         <Stack.Screen
           name="Chat"
           component={ChatScreen}
+          options={{ animation: 'slide_from_right' }}
+        />
+        {/* Opened from the ProfileButton circle on each tab, not from the tab bar. */}
+        <Stack.Screen
+          name="Profile"
+          component={ProfileTab}
           options={{ animation: 'slide_from_right' }}
         />
       </Stack.Navigator>

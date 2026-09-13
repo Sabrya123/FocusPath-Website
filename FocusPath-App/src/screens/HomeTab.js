@@ -19,6 +19,7 @@ import { StarIcon, CheckIcon, CategoryIcon, CloseIcon, DeleteIcon, MedalIcon, St
 import { NEGATIVE_FACTS, POSITIVE_FACTS, ALLAH_REMINDERS } from '../data/facts';
 import FactCard from '../components/FactCard';
 import RankScene from '../components/RankScene';
+import ProfileButton from '../components/ProfileButton';
 import { syncProfileToSupabase } from '../utils/friends';
 import { supabase } from '../utils/supabase';
 
@@ -844,7 +845,10 @@ export default function HomeTab({ navigation }) {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <Text style={styles.dateText}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.dateText}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
+          <ProfileButton />
+        </View>
         <Text style={styles.greeting}>Unclouded</Text>
 
         <View style={styles.grid}>
@@ -955,12 +959,17 @@ export default function HomeTab({ navigation }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.bg },
   scroll: { padding: 20, paddingBottom: 100 },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
   dateText: {
     fontSize: 13,
     fontWeight: '600',
     color: Colors.textSecondary,
     textAlign: 'left',
-    marginBottom: 4,
   },
   greeting: {
     fontSize: 28,

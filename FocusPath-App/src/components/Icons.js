@@ -209,6 +209,31 @@ export function ProfileIcon({ size = 24, color = Colors.red, focused = false }) 
   );
 }
 
+export function DopamineIcon({ size = 24, color = Colors.red, focused = false }) {
+  const opacity = useGlow(focused, 1400);
+  return (
+    <Animated.View style={{ opacity: focused ? opacity : 1 }}>
+      <Svg width={size} height={size} viewBox="0 0 24 24">
+        <Defs>
+          <LinearGradient id="dopGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <Stop offset="0%" stopColor={focused ? Colors.redLight : color} />
+            <Stop offset="100%" stopColor={focused ? Colors.red : color} />
+          </LinearGradient>
+        </Defs>
+        {/* Lightning bolt — a quick, healthy hit */}
+        <Path
+          d="M13 2L4 14H12L11 22L20 10H12L13 2Z"
+          stroke="url(#dopGrad)"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+        />
+      </Svg>
+    </Animated.View>
+  );
+}
+
 // ===== CATEGORY ICONS =====
 
 export function PhysicalIcon({ size = 20, color = Colors.redLight }) {

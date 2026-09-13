@@ -16,6 +16,7 @@ import { Colors } from '../utils/colors';
 import { supabase } from '../utils/supabase';
 import { FireIcon, CheckIcon, CloseIcon } from '../components/Icons';
 import { getCurrentUser } from '../utils/storage';
+import ProfileButton from '../components/ProfileButton';
 import {
   ensureFriendCode,
   addFriendByCode,
@@ -212,7 +213,7 @@ export default function FriendsTab() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
-          <Text style={styles.heading}>Friends</Text>
+          <Text style={[styles.heading, styles.headingSpaced]}>Friends</Text>
           <Text style={styles.emptyText}>
             Connect to the internet to add friends and see their progress.
           </Text>
@@ -224,7 +225,10 @@ export default function FriendsTab() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <Text style={styles.heading}>Friends</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.heading}>Friends</Text>
+          <ProfileButton />
+        </View>
 
         {/* Urge Alerts */}
         {alerts.map((alert) => (
@@ -397,12 +401,18 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.bg },
   scroll: { padding: 20, paddingBottom: 100 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
   heading: {
     fontSize: 24,
     fontWeight: '700',
     color: Colors.textBright,
-    marginBottom: 16,
   },
+  headingSpaced: { marginBottom: 16 },
   card: {
     backgroundColor: Colors.bgCard,
     borderRadius: 16,
