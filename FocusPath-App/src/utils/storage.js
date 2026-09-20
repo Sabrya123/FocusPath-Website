@@ -40,6 +40,10 @@ export function getDayOfYear() {
 // midnight, which puts everyone west of UTC a day ahead of their real streak —
 // quitting today would read as day one. Anything else falls through to the
 // built-in parser.
+function startOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
 function parseQuitDate(quitDateStr) {
   const parts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(quitDateStr || '');
   if (parts) {
@@ -53,7 +57,12 @@ export function getStreakInfo(quitDateStr) {
   const now = new Date();
   const diffMs = now - quitDate;
   const hours = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60)));
-  const days = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+  // Days counts calendar days turned over, not 24-hour blocks. A DST day runs
+  // 23 or 25 hours, so dividing elapsed milliseconds drops or gains a day and
+  // keeps that error for the rest of the streak. Rounding the midnight-to-
+  // midnight gap absorbs the stray hour.
+  const dayMs = 1000 * 60 * 60 * 24;
+  const days = Math.max(0, Math.round((startOfDay(now) - startOfDay(quitDate)) / dayMs));
   const weeks = Math.max(0, Math.floor(days / 7));
 
   let message = '';

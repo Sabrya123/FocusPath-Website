@@ -32,6 +32,10 @@ export function UserProvider({ children }) {
   const writeQueue = useRef(Promise.resolve());
 
   const refresh = useCallback(async () => {
+    // Let queued writes land first. refresh re-reads the whole users blob, so
+    // running it mid-write hands back the pre-write record and wipes the
+    // optimistic update back off the screen.
+    await writeQueue.current;
     const address = await getSession();
     emailRef.current = address;
     if (!address) {
@@ -47,8 +51,16 @@ export function UserProvider({ children }) {
   useEffect(() => {
     let active = true;
     (async () => {
-      await refresh();
-      if (active) setLoading(false);
+      try {
+        await refresh();
+      } catch (error) {
+        // A read that failed proves nothing about who is signed in, so treat it
+        // as signed out rather than leaving a half-loaded user on screen.
+        if (active) setUser(null);
+      } finally {
+        // Always, or a failed read leaves the app on the splash forever.
+        if (active) setLoading(false);
+      }
     })();
     return () => {
       active = false;
