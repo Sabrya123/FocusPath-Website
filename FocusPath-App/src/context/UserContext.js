@@ -19,12 +19,11 @@ import {
 const UserContext = createContext(null);
 
 export function UserProvider({ children }) {
-  const [email, setEmail] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Mirrors `email` so a queued write can read it without being rebuilt
-  // every time the address changes.
+  // The address queued writes target. A ref rather than state because nothing
+  // renders it — only the write path reads it.
   const emailRef = useRef(null);
 
   // Writes link onto this chain instead of racing. A write is a
@@ -32,14 +31,9 @@ export function UserProvider({ children }) {
   // lose one of them.
   const writeQueue = useRef(Promise.resolve());
 
-  const applySession = useCallback((address) => {
-    emailRef.current = address;
-    setEmail(address);
-  }, []);
-
   const refresh = useCallback(async () => {
     const address = await getSession();
-    applySession(address);
+    emailRef.current = address;
     if (!address) {
       setUser(null);
       return null;
@@ -48,7 +42,7 @@ export function UserProvider({ children }) {
     const next = users[address] || null;
     setUser(next);
     return next;
-  }, [applySession]);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -78,36 +72,29 @@ export function UserProvider({ children }) {
 
     // Keep the chain alive even if this write throws, so one failure doesn't
     // wedge every write after it.
-    writeQueue.current = task.then(
-      () => undefined,
-      () => undefined
-    );
+    writeQueue.current = task.catch(() => {});
     return task;
   }, []);
 
   const signIn = useCallback(
     async (address) => {
       await setSession(address);
-      applySession(address);
-      const users = await getUsers();
-      const next = users[address] || null;
-      setUser(next);
-      return next;
+      return refresh();
     },
-    [applySession]
+    [refresh]
   );
 
   const signOut = useCallback(async () => {
     // Let anything already queued land before the session goes away.
     await writeQueue.current;
     await clearSession();
-    applySession(null);
+    emailRef.current = null;
     setUser(null);
-  }, [applySession]);
+  }, []);
 
   const value = useMemo(
-    () => ({ email, user, loading, refresh, update, signIn, signOut }),
-    [email, user, loading, refresh, update, signIn, signOut]
+    () => ({ user, loading, refresh, update, signIn, signOut }),
+    [user, loading, refresh, update, signIn, signOut]
   );
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
