@@ -9,16 +9,21 @@ import {
   Alert,
   Modal,
   Image,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Svg, { Circle, Rect, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Colors } from '../utils/colors';
 import { getCurrentUser, getSession, updateUser, getUsers, getDayOfYear } from '../utils/storage';
-import { StarIcon, CheckIcon, CategoryIcon, CloseIcon, DeleteIcon, MedalIcon, StrengthIcon, SparkleIcon, XIcon, FireIcon, MosqueIcon } from '../components/Icons';
+import { StarIcon, CheckIcon, CategoryIcon, CloseIcon, DeleteIcon, MedalIcon, StrengthIcon, SparkleIcon, XIcon, MosqueIcon } from '../components/Icons';
 import { NEGATIVE_FACTS, POSITIVE_FACTS, ALLAH_REMINDERS } from '../data/facts';
 import FactCard from '../components/FactCard';
 import RankScene from '../components/RankScene';
+import ProfileButton from '../components/ProfileButton';
+import { Earth, ZoneGradient, Cloud, SunBadge, HillEdge, StratumChip } from '../components/EarthScene';
+import { CloudWord, CloudText, BoneText, Scratch } from '../components/EarthLetters';
+import { DOPAMINE_POINTS } from './DopamineTab';
 import { syncProfileToSupabase } from '../utils/friends';
 import { supabase } from '../utils/supabase';
 
@@ -68,6 +73,31 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 const POINTS_PER_COMPLETION = 50;
 const POINTS_LOST_ON_MISS = 30;
 
+// Scene geometry — the clouds are sized off the screen so the sky reads the
+// same on a small phone as it does on a large one.
+const SCREEN_W = Dimensions.get('window').width;
+const ZONE_PAD = 20;
+const SCENE_W = SCREEN_W - ZONE_PAD * 2;
+// One overlapping cloud cluster, not three cards in a row: progress is the back
+// mass, points and streak are front masses that bump up into it and cast onto it.
+const CLOUD_PROGRESS_H = 158;
+const CLOUD_STAT_H = 112;
+// the two front masses overlap each other as well, so the cluster reads as one
+// cloud rather than two sitting side by side
+const CLOUD_POINTS_W = SCENE_W * 0.58;
+const CLOUD_STREAK_W = SCENE_W * 0.46;
+const CLUSTER_OVERLAP = 36;
+const CLUSTER_H = CLOUD_PROGRESS_H + CLOUD_STAT_H - CLUSTER_OVERLAP;
+
+// The sun behind the profile button. Sized so its rays start just outside the
+// 40pt avatar circle (ray inner edge is 17/64 of the badge).
+const SUN_SIZE = 74;
+
+// Progress ring drawn on the cloud face
+const RING_SIZE = 84;
+const RING_R = 48; // in the ring's own 110-unit viewBox
+const RING_CIRC = 2 * Math.PI * RING_R;
+
 // Milestone tiers
 const MILESTONES = [
   { days: 30, label: '1 Month', next: '3 Months' },
@@ -98,6 +128,7 @@ function ProgressCard({ streakDays, allDone }) {
 
   const milestone = getMilestone(streakDays);
   const progress = Math.min(streakDays / milestone.days, 1);
+  const pct = Math.round(progress * 100);
   const offset = CIRCUMFERENCE * (1 - progress);
   const daysLeft = milestone.days - streakDays;
 
@@ -108,36 +139,63 @@ function ProgressCard({ streakDays, allDone }) {
 
   return (
     <>
-      <TouchableOpacity style={styles.gridCard} onPress={() => setShowDetail(true)} activeOpacity={0.7}>
-        <Text style={styles.cardTitle}>Progress</Text>
-        <View style={styles.miniRingWrap}>
-          <Svg width={110} height={110} viewBox="0 0 110 110">
-            <Defs>
-              <LinearGradient id="miniGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <Stop offset="0%" stopColor={Colors.redDark} />
-                <Stop offset="100%" stopColor={Colors.redLight} />
-              </LinearGradient>
-            </Defs>
-            <Circle cx="55" cy="55" r={RADIUS} fill="none" stroke={Colors.border} strokeWidth={8} />
-            <Circle
-              cx="55" cy="55" r={RADIUS} fill="none"
-              stroke="url(#miniGrad)" strokeWidth={8} strokeLinecap="round"
-              strokeDasharray={CIRCUMFERENCE} strokeDashoffset={offset}
-              rotation="-90" origin="55, 55"
-            />
-          </Svg>
-          <View style={styles.miniRingOverlay}>
-            <Text style={styles.progressPercent}>{Math.round(progress * 100)}%</Text>
-            <Text style={styles.miniRingLabel}>{milestone.label}</Text>
+      <TouchableOpacity
+        onPress={() => setShowDetail(true)}
+        activeOpacity={0.85}
+        accessibilityRole="button"
+        accessibilityLabel={`Progress ${Math.round(progress * 100)} percent toward ${milestone.label}`}
+      >
+        <Cloud width={SCENE_W} height={CLOUD_PROGRESS_H} contentStyle={styles.cloudRowContent}>
+          <View style={styles.cloudRingWrap}>
+            <Svg width={RING_SIZE} height={RING_SIZE} viewBox="0 0 110 110">
+              <Defs>
+                <LinearGradient id="miniGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <Stop offset="0%" stopColor={Colors.redDark} />
+                  <Stop offset="100%" stopColor={Colors.redLight} />
+                </LinearGradient>
+              </Defs>
+              <Circle cx="55" cy="55" r={RING_R} fill="none" stroke="#dcebf4" strokeWidth={9} />
+              <Circle
+                cx="55" cy="55" r={RING_R} fill="none"
+                stroke="url(#miniGrad)" strokeWidth={9} strokeLinecap="round"
+                strokeDasharray={RING_CIRC} strokeDashoffset={RING_CIRC * (1 - progress)}
+                rotation="-90" origin="55, 55"
+              />
+            </Svg>
+            <View style={styles.cloudRingOverlay} pointerEvents="none">
+              <Text style={styles.cloudRingPercent}>{pct}%</Text>
+              <Text style={styles.cloudRingGoal}>{milestone.label}</Text>
+            </View>
           </View>
-        </View>
-        {allDone ? (
-          <View style={styles.completedBanner}>
-            <Text style={styles.completedText}>All done today!</Text>
+
+          <View style={styles.cloudRingInfo}>
+            <Text style={styles.cloudTitle}>Progress</Text>
+            {allDone ? (
+              <Text style={styles.cloudSubDone}>All done today</Text>
+            ) : (
+              <Text style={styles.cloudSub}>{daysLeft} days to {milestone.label}</Text>
+            )}
+            {/* one bar per milestone tier, filling with the same number the
+                ring shows — a tier already passed reads full */}
+            <View style={styles.milestoneBar}>
+              {MILESTONES.map((m) => {
+                const done = streakDays >= m.days;
+                const isCurrent = milestone === m;
+                const fill = done ? 1 : isCurrent ? progress : 0;
+                return (
+                  <View key={m.days} style={styles.milestoneSeg}>
+                    <View
+                      style={[
+                        styles.milestoneSegFill,
+                        { width: `${Math.min(fill, 1) * 100}%` },
+                      ]}
+                    />
+                  </View>
+                );
+              })}
+            </View>
           </View>
-        ) : (
-          <Text style={styles.streakMsg}>{daysLeft} days to {milestone.label}</Text>
-        )}
+        </Cloud>
       </TouchableOpacity>
 
       {/* Expanded Progress Modal */}
@@ -233,26 +291,38 @@ function ProgressCard({ streakDays, allDone }) {
 
 function PointsStatsCard({ points, onPress }) {
   return (
-    <TouchableOpacity style={[styles.gridCard, styles.topRightCard]} onPress={onPress} activeOpacity={0.7}>
-      <Text style={styles.cardTitle}>Points</Text>
-      <View style={styles.pointsDisplayRow}>
-        <StarIcon size={20} />
-        <Text style={styles.pointsDisplayNum}>{points.toLocaleString()}</Text>
-      </View>
-      <Text style={styles.pointsDisplayLabel}>pts earned</Text>
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={`${points} points earned. View ranks.`}
+    >
+      <Cloud width={CLOUD_POINTS_W} height={CLOUD_STAT_H}>
+        <View style={styles.cloudStatRow}>
+          <StarIcon size={20} />
+          <Text style={styles.cloudStatNum}>{points.toLocaleString()}</Text>
+        </View>
+        <Text style={styles.cloudStatLabel}>pts earned</Text>
+      </Cloud>
     </TouchableOpacity>
   );
 }
 
 function StreakStatsCard({ streakDays, onPress }) {
   return (
-    <TouchableOpacity style={[styles.gridCard, styles.topRightCard]} onPress={onPress} activeOpacity={0.7}>
-      <Text style={styles.cardTitle}>Streak</Text>
-      <View style={styles.streakDisplayRow}>
-        <FireIcon size={24} />
-        <Text style={styles.streakDisplayNum}>{streakDays}</Text>
-      </View>
-      <Text style={styles.streakDisplayLabel}>day{streakDays !== 1 ? 's' : ''} strong</Text>
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={`${streakDays} day streak. View leaderboard.`}
+    >
+      <Cloud width={CLOUD_STREAK_W} height={CLOUD_STAT_H}>
+        <View style={styles.cloudStatRow}>
+          <Text style={styles.cloudStatNumStreak}>{streakDays}</Text>
+          <SunBadge size={30} />
+        </View>
+        <Text style={styles.cloudStatLabel}>day{streakDays !== 1 ? 's' : ''} strong</Text>
+      </Cloud>
     </TouchableOpacity>
   );
 }
@@ -263,70 +333,103 @@ function HabitBlock({ habits, onStart, onDelete, onPressAdd, canAddHabit, maxHab
   const doneCount = habits.filter(h => h.done).length;
 
   return (
-    <View style={styles.gridCard}>
-      <View style={styles.habitHeader}>
-        <View>
-          <Text style={styles.cardTitle}>Daily Habits</Text>
-          <Text style={styles.cardSubtitle}>
-            Month {journeyMonth} — {maxHabits} habit{maxHabits > 1 ? 's' : ''} required
-          </Text>
+    // The grass is only the surface — every word here is scratched into the
+    // dirt beneath it, each letter given its own tilt, size and baseline drift.
+    <View style={styles.plotBlock}>
+      <View style={styles.plotHeader}>
+        <View style={styles.plotHeaderText}>
+          <Scratch text="Daily Habits" style={styles.plotTitle} />
+          <Scratch
+            text={`Month ${journeyMonth} — ${maxHabits} habit${maxHabits > 1 ? 's' : ''} required`}
+            style={styles.plotSubtitle}
+            amount={0.75}
+          />
         </View>
         {habits.length > 0 && (
-          <Text style={styles.habitProgress}>{doneCount}/{habits.length}</Text>
+          <Scratch text={`${doneCount}/${habits.length}`} style={styles.plotCount} />
         )}
       </View>
 
       {habits.map((h, i) => (
-        <View key={i} style={styles.habitRow}>
-          <View style={[styles.habitCheck, h.done && styles.habitCheckDone]}>
-            {h.done && <CheckIcon size={12} color="#fff" />}
+        <View key={i} style={[styles.plotRow, h.done && styles.plotRowDone]}>
+          {/* a soil-rimmed seed well — status, not a control: habits are
+              completed through the timer, same as before */}
+          <View style={[styles.plotCheck, h.done && styles.plotCheckDone]} importantForAccessibility="no">
+            {h.done && <CheckIcon size={13} color={Earth.dirtPill} />}
           </View>
-          <View style={styles.habitCategoryIcon}>
-            <CategoryIcon category={h.category} size={18} />
+          <View style={styles.plotCategoryIcon}>
+            <CategoryIcon category={h.category} size={17} />
           </View>
-          <View style={styles.habitInfo}>
-            <Text style={[styles.habitText, h.done && styles.habitTextDone]}>
-              {h.name}
-            </Text>
+          <View style={styles.plotInfo}>
+            <Scratch
+              text={h.name}
+              style={[styles.plotHabitText, h.done && styles.plotHabitTextDone]}
+            />
             {h.pausedTimeLeft != null ? (
-              <Text style={styles.habitTimerPaused}>
-                {Math.floor(h.pausedTimeLeft / 60)}:{(h.pausedTimeLeft % 60).toString().padStart(2, '0')} left
-              </Text>
+              <Scratch
+                text={`${Math.floor(h.pausedTimeLeft / 60)}:${(h.pausedTimeLeft % 60).toString().padStart(2, '0')} left`}
+                style={styles.plotTimerPaused}
+                amount={0.75}
+              />
             ) : h.timer > 0 ? (
-              <Text style={styles.habitTimer}>{h.timer} min</Text>
+              <Scratch text={`${h.timer} min`} style={styles.plotTimer} amount={0.75} />
             ) : null}
           </View>
           {h.done ? (
-            <View style={styles.doneLabelRow}><CheckIcon size={12} color="#22c55e" /><Text style={styles.doneLabel}> Done</Text></View>
-          ) : h.pausedTimeLeft != null ? (
-            <TouchableOpacity style={styles.resumeBtn} onPress={() => onStart(i)}>
-              <Text style={styles.resumeBtnText}>Resume</Text>
-            </TouchableOpacity>
+            <View style={styles.plotDoneRow}>
+              <CheckIcon size={12} color={Earth.canopyDeep} />
+              <Scratch text=" Done" style={styles.plotDoneLabel} />
+            </View>
           ) : (
-            <TouchableOpacity style={styles.startBtn} onPress={() => onStart(i)}>
-              <Text style={styles.startBtnText}>Start</Text>
+            <TouchableOpacity
+              style={styles.plotBtn}
+              onPress={() => onStart(i)}
+              accessibilityRole="button"
+              accessibilityLabel={`${h.pausedTimeLeft != null ? 'Resume' : 'Start'} ${h.name}`}
+            >
+              <Scratch
+                text={h.pausedTimeLeft != null ? 'Resume' : 'Start'}
+                style={styles.plotBtnText}
+              />
             </TouchableOpacity>
           )}
-          <TouchableOpacity onPress={() => onDelete(i)} style={styles.habitDelete}>
-            <DeleteIcon size={16} color={Colors.textMuted} />
+          <TouchableOpacity
+            onPress={() => onDelete(i)}
+            style={styles.plotDelete}
+            accessibilityRole="button"
+            accessibilityLabel={`Delete ${h.name}`}
+          >
+            <DeleteIcon size={15} color={Earth.dirtInkSoft} />
           </TouchableOpacity>
         </View>
       ))}
 
       {habits.length === 0 && (
-        <Text style={styles.emptyHabits}>Tap + to add your first habit!</Text>
+        <Scratch
+          text="Tap + to add your first habit!"
+          style={styles.plotEmpty}
+          align="center"
+          amount={0.8}
+        />
       )}
 
       {canAddHabit ? (
-        <TouchableOpacity style={styles.addHabitBtn} onPress={onPressAdd}>
-          <Text style={styles.addBtnText}>+ Add Habit ({habits.length}/{maxHabits})</Text>
+        <TouchableOpacity style={styles.plotAddBtn} onPress={onPressAdd} accessibilityRole="button">
+          <Scratch
+            text={`+ Add Habit (${habits.length}/${maxHabits})`}
+            style={styles.plotAddText}
+            align="center"
+            amount={0.8}
+          />
         </TouchableOpacity>
       ) : maxHabits < 3 ? (
-        <View style={styles.lockedHabitMsg}>
-          <LockIcon size={14} color={Colors.textMuted} />
-          <Text style={styles.lockedHabitText}>
-            New habit slot unlocks in month {maxHabits + 1}
-          </Text>
+        <View style={styles.plotLockedMsg}>
+          <LockIcon size={13} color={Earth.dirtInkSoft} />
+          <Scratch
+            text={`New habit slot unlocks in month ${maxHabits + 1}`}
+            style={styles.plotLockedText}
+            amount={0.7}
+          />
         </View>
       ) : null}
     </View>
@@ -429,27 +532,107 @@ function PointsInfoCard({ points, streakDays, onPress }) {
   const rank = ALL_RANKS[currentIndex];
   const nextRank = currentIndex < ALL_RANKS.length - 1 ? ALL_RANKS[currentIndex + 1] : null;
 
+  // Read the strata bottom-up: Grounded is bedrock, and every rank you earn is
+  // a layer closer to daylight. So the list renders highest-first.
+  const strata = ALL_RANKS.slice().reverse();
+
+  // Down here the words are bone: every stroke of every letter is a single bone,
+  // bowed and jittered per letter so no two are alike.
+  const RULE_W = SCENE_W - 26;
   return (
-    <TouchableOpacity style={styles.gridCard} onPress={onPress} activeOpacity={0.7}>
-      <View style={styles.rankHeader}>
-        <Text style={styles.cardTitle}>Your Rank</Text>
-        <Text style={styles.rankTap}>Tap to view all ›</Text>
+    <View>
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.85}
+        accessibilityRole="button"
+        accessibilityLabel={`Rank ${rank.name}. Tap to view all ranks.`}
+      >
+        <View style={styles.strataHeader}>
+          <BoneText text="The Ranks of Ascension" cap={15} maxWidth={SCENE_W * 0.52} />
+          <BoneText text="Tap to view all ›" cap={13} maxWidth={SCENE_W * 0.46} ink={Earth.boneSoft} />
+        </View>
+
+        <View style={styles.strataCurrent}>
+          <RankScene scene={rank.name.toLowerCase()} size={78} />
+          <View style={styles.strataCurrentInfo}>
+            <BoneText text={rank.name} cap={29} maxWidth={SCENE_W - 110} ink="#f7f0dd" />
+            {nextRank && (
+              <BoneText
+                text={`${nextRank.minPoints - points} pts to ${nextRank.name}`}
+                cap={14}
+                maxWidth={SCENE_W - 110}
+                ink="#e4d9c3"
+                style={styles.strataCurrentNext}
+              />
+            )}
+          </View>
+        </View>
+
+        <View style={styles.strataList}>
+          {strata.map((r, i) => {
+            const isCurrent = r.name === rank.name;
+            const unlocked = points >= r.minPoints;
+            return (
+              <View
+                key={r.name}
+                style={[
+                  styles.strataRow,
+                  // a cross-section read bottom-up: Grounded is the lit bedrock
+                  // at the base, and the strata darken toward the surface
+                  { backgroundColor: Earth.strata[i] },
+                  i === 0 && styles.strataRowFirst,
+                  i === strata.length - 1 && styles.strataRowLast,
+                ]}
+              >
+                <StratumChip rank={r.name} size={28} locked={!unlocked} />
+                <View style={styles.strataInfo}>
+                  <BoneText
+                    text={r.name}
+                    cap={16.5}
+                    maxWidth={SCENE_W * 0.42}
+                    opacity={unlocked ? 1 : 0.55}
+                  />
+                  <BoneText
+                    text={`${r.minPoints} pts`}
+                    cap={12.5}
+                    maxWidth={SCENE_W * 0.34}
+                    ink={Earth.boneSoft}
+                    opacity={unlocked ? 1 : 0.55}
+                    style={styles.strataPts}
+                  />
+                </View>
+                <BoneText
+                  text={isCurrent ? 'Current' : unlocked ? 'Reached' : 'Locked'}
+                  cap={12.5}
+                  maxWidth={SCENE_W * 0.28}
+                  ink="#e8ddc7"
+                  opacity={unlocked ? 1 : 0.55}
+                />
+              </View>
+            );
+          })}
+        </View>
+      </TouchableOpacity>
+
+      <BoneText text="How points move" cap={16} maxWidth={SCENE_W * 0.6} style={styles.strataRulesTitle} />
+      <View style={styles.strataRules}>
+        {[
+          [true, `Write daily affirmation: earn 25 pts`],
+          [true, `Complete habits and affirmation: earn ${POINTS_PER_COMPLETION} pts`],
+          [true, `Finish a Dopamine task: earn ${DOPAMINE_POINTS} pts each`],
+          [false, `Miss a day: lose ${POINTS_LOST_ON_MISS} pts, streak resets`],
+        ].map(([good, text]) => (
+          <View key={text} style={styles.strataRuleRow}>
+            {good ? (
+              <CheckIcon size={13} color="#8fd9a0" />
+            ) : (
+              <XIcon size={13} color="#9ecfdf" />
+            )}
+            <BoneText text={text} cap={13} maxWidth={RULE_W - 21} ink="#e4d9c3" style={styles.strataRuleBones} />
+          </View>
+        ))}
       </View>
-      <View style={styles.rankDisplay}>
-        <RankScene scene={rank.name.toLowerCase()} size={44} />
-        <Text style={styles.rankText}>{rank.name}</Text>
-      </View>
-      {nextRank && (
-        <Text style={styles.nextRankText}>
-          {nextRank.minPoints - points} pts to {nextRank.name}
-        </Text>
-      )}
-      <View style={styles.pointsRules}>
-        <View style={styles.ruleRow}><CheckIcon size={12} color="#22c55e" /><Text style={styles.ruleText}> Write daily affirmation: +25 pts</Text></View>
-        <View style={styles.ruleRow}><CheckIcon size={12} color="#22c55e" /><Text style={styles.ruleText}> Complete habits + affirmation: +{POINTS_PER_COMPLETION} pts</Text></View>
-        <View style={styles.ruleRow}><XIcon size={12} color={Colors.red} /><Text style={styles.ruleText}> Miss a day: -{POINTS_LOST_ON_MISS} pts & streak resets</Text></View>
-      </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 
@@ -462,14 +645,18 @@ function MantraCard({ mantra, mantraInput, onChangeMantra, onSubmitMantra, mantr
   const isMatch = mantraInput.trim().toLowerCase() === mantra.trim().toLowerCase();
 
   return (
-    <View style={styles.gridCard}>
+    <View style={styles.skyMantra}>
       <View style={styles.mantraHeader}>
-        <Text style={styles.cardTitle}>Daily Affirmation</Text>
-        <TouchableOpacity onPress={() => { setEditText(mantra); setEditing(true); }}>
-          <Text style={styles.editMantraBtn}>Edit ✎</Text>
+        <Text style={styles.skyEyebrow}>Daily affirmation</Text>
+        <TouchableOpacity
+          onPress={() => { setEditText(mantra); setEditing(true); }}
+          hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+          accessibilityRole="button"
+          accessibilityLabel="Edit your affirmation"
+        >
+          <Text style={styles.skyEditBtn}>Edit ✎</Text>
         </TouchableOpacity>
       </View>
-      <Text style={styles.mantraSubtitle}>Write your affirmation to earn points & keep your streak</Text>
 
       {editing ? (
         <View style={styles.editMantraBox}>
@@ -500,30 +687,50 @@ function MantraCard({ mantra, mantraInput, onChangeMantra, onSubmitMantra, mantr
           </View>
         </View>
       ) : (
-        <View style={styles.mantraBox}>
-          <Text style={styles.mantraText}>"{mantra}"</Text>
-        </View>
+        // The affirmation is lettered into the sky itself: each letter a cloud
+        // mass built from the same scalloped puffs as the CLOUD in the wordmark.
+        <CloudText text={mantra} width={SCENE_W} style={styles.skyMantraCloud} />
       )}
       {mantraDone ? (
-        <View style={styles.completedBanner}>
-          <Text style={styles.completedText}>Affirmation written today!</Text>
+        <View style={styles.skyDoneBanner}>
+          <CheckIcon size={13} color="#0d2b1a" />
+          <Text style={styles.skyDoneText}> Affirmation written today</Text>
         </View>
       ) : (
         <>
-          <TextInput
-            style={[styles.mantraInput, isMatch && styles.mantraInputMatch]}
-            placeholder="Type your affirmation exactly..."
-            placeholderTextColor={Colors.textMuted}
-            value={mantraInput}
-            onChangeText={onChangeMantra}
-            multiline
-          />
+          <Text style={styles.skyMantraPrompt}>Write it out to earn points & keep your streak</Text>
+
+          {/* An open patch of sky you write into — your words cloud over it. */}
+          <View style={[styles.skyField, isMatch && styles.skyFieldMatch]}>
+            {mantraInput.trim().length > 0 ? (
+              <CloudText
+                text={mantraInput}
+                width={SCENE_W - 80}
+                capMax={21}
+                capMin={9}
+                maxLines={3}
+              />
+            ) : (
+              <Text style={styles.skyFieldHint}>Write it here, word for word</Text>
+            )}
+            <TextInput
+              style={styles.skyFieldInput}
+              value={mantraInput}
+              onChangeText={onChangeMantra}
+              multiline
+              caretHidden
+              accessibilityLabel="Type your affirmation"
+            />
+          </View>
+
           <TouchableOpacity
-            style={[styles.mantraSubmitBtn, !isMatch && styles.mantraSubmitDisabled]}
+            style={[styles.skyMantraBtn, !isMatch && styles.skyMantraBtnDisabled]}
             onPress={onSubmitMantra}
             disabled={!isMatch}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !isMatch }}
           >
-            <Text style={styles.mantraSubmitText}>
+            <Text style={[styles.skyMantraBtnText, !isMatch && styles.skyMantraBtnTextDisabled]}>
               {isMatch ? '✓ Submit Affirmation' : 'Type your affirmation to unlock'}
             </Text>
           </TouchableOpacity>
@@ -535,9 +742,9 @@ function MantraCard({ mantra, mantraInput, onChangeMantra, onSubmitMantra, mantr
 
 function MotivationCard({ identity }) {
   return (
-    <View style={styles.gridCard}>
-      <Text style={styles.cardTitle}>Your Identity</Text>
-      <Text style={styles.identityText}>{identity || 'Set your identity in your profile'}</Text>
+    <View style={styles.identityPlot}>
+      <Text style={styles.identityPlotTitle}>Your Identity</Text>
+      <Text style={styles.identityPlotText}>{identity || 'Set your identity in your profile'}</Text>
     </View>
   );
 }
@@ -842,65 +1049,139 @@ export default function HomeTab({ navigation }) {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <Text style={styles.dateText}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
-        <Text style={styles.greeting}>Unclouded</Text>
 
-        <View style={styles.grid}>
-          {/* Top row: Progress left, Points + Streak right */}
-          <View style={styles.topRow}>
-            <View style={styles.topLeft}>
+        {/* ─── SKY ─────────────────────────────────────────────────────────
+            Progress, points and streak live up here as cloud-shaped
+            surfaces, and the affirmation is lettered into the sky itself. */}
+        <View style={styles.skyZone}>
+          <ZoneGradient
+            stops={[
+              ['0%', Earth.skyDeep],
+              ['34%', Earth.skyMid],
+              ['68%', Earth.skyPale],
+              ['90%', Earth.skyThin],
+              ['100%', Earth.haze],
+            ]}
+          />
+          <View style={styles.zoneContent}>
+            <View style={styles.headerRow}>
+              <Text style={styles.dateText}>
+                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              </Text>
+              <View style={styles.headerRight}>
+                {/* the profile button IS the sun: rays radiate from behind it */}
+                <View style={styles.sunRays} pointerEvents="none">
+                  <SunBadge size={SUN_SIZE} />
+                </View>
+                <ProfileButton />
+              </View>
+            </View>
+
+            {/* CLOUD is lettered out of the same scalloped puffs as the sky */}
+            <View style={styles.wordmarkRow} accessible accessibilityLabel="unCLOUD’d">
+              <Text style={styles.wordmarkThin}>un</Text>
+              <CloudWord width={SCENE_W * 0.62} />
+              <Text style={styles.wordmarkThin}>’d</Text>
+            </View>
+            <Text style={styles.climbLabel}>Day {streakDays} of the climb</Text>
+
+            {/* One cloud cluster: progress is the back mass, points and streak
+                are front masses bumping up into it. */}
+            <View style={styles.cloudCluster}>
               <ProgressCard streakDays={streakDays} allDone={allDone} />
+              <View style={styles.clusterStreak}>
+                <StreakStatsCard streakDays={streakDays} onPress={() => setShowLeaderboard(true)} />
+              </View>
+              <View style={styles.clusterPoints}>
+                <PointsStatsCard points={points} onPress={() => setShowRanks(true)} />
+              </View>
             </View>
-            <View style={styles.topRight}>
-              <PointsStatsCard points={points} onPress={() => setShowRanks(true)} />
-              <StreakStatsCard streakDays={streakDays} onPress={() => setShowLeaderboard(true)} />
-            </View>
+
+            <MantraCard
+              mantra={mantra}
+              mantraInput={mantraInput}
+              onChangeMantra={setMantraInput}
+              onSubmitMantra={handleMantraSubmit}
+              mantraDone={mantraDone}
+              onEditMantra={handleEditMantra}
+            />
           </View>
-
-          <MantraCard
-            mantra={mantra}
-            mantraInput={mantraInput}
-            onChangeMantra={setMantraInput}
-            onSubmitMantra={handleMantraSubmit}
-            mantraDone={mantraDone}
-            onEditMantra={handleEditMantra}
-          />
-          <HabitBlock
-            habits={habits}
-            onStart={startHabit}
-            onDelete={deleteHabit}
-            onPressAdd={openAddHabit}
-            canAddHabit={canAddHabit}
-            maxHabits={maxHabits}
-            journeyMonth={journeyMonth}
-          />
-
-          {/* Daily Facts — under habits */}
-          <Text style={styles.factsHeading}>Daily Facts</Text>
-          <FactCard type="negative" title="Daily Vaping Fact" text={NEGATIVE_FACTS[getDayOfYear() % NEGATIVE_FACTS.length]} />
-          <FactCard type="positive" title="Daily Quitting Win" text={POSITIVE_FACTS[getDayOfYear() % POSITIVE_FACTS.length]} />
-          {hasAllah && (
-            <View style={styles.allahCard}>
-              <View style={styles.allahIconWrap}><MosqueIcon size={28} /></View>
-              <Text style={styles.allahTitle}>DAILY REMINDER</Text>
-              <Text style={styles.allahText}>{ALLAH_REMINDERS[getDayOfYear() % ALLAH_REMINDERS.length]}</Text>
-            </View>
-          )}
-
-          <PointsInfoCard
-            points={points}
-            streakDays={streakDays}
-            onPress={() => setShowRanks(true)}
-          />
-          <RanksModal
-            visible={showRanks}
-            onClose={() => setShowRanks(false)}
-            points={points}
-          />
-          <MotivationCard identity={identity} />
         </View>
+
+        {/* ─── GRASS ───────────────────────────────────────────────────────
+            Habits are plots you tend at ground level. */}
+        <View style={styles.grassZone}>
+          {/* the grass stays bright almost all the way down — it only darkens
+              at the cut where the soil cross-section begins */}
+          <ZoneGradient
+            stops={[
+              ['0%', '#c3e095'],
+              ['14%', Earth.grassLight],
+              ['93%', '#9ccf62'],
+              ['97%', Earth.grassMid],
+              ['100%', Earth.grassDeep],
+            ]}
+          />
+          <View style={styles.hillEdge}>
+            <HillEdge topColor="#d4e5ae" />
+          </View>
+          <View style={[styles.zoneContent, styles.grassContent]}>
+            <HabitBlock
+              habits={habits}
+              onStart={startHabit}
+              onDelete={deleteHabit}
+              onPressAdd={openAddHabit}
+              canAddHabit={canAddHabit}
+              maxHabits={maxHabits}
+              journeyMonth={journeyMonth}
+            />
+
+            <Text style={styles.factsHeading}>Daily Facts</Text>
+            <FactCard type="negative" title="Daily Vaping Fact" text={NEGATIVE_FACTS[getDayOfYear() % NEGATIVE_FACTS.length]} />
+            <FactCard type="positive" title="Daily Quitting Win" text={POSITIVE_FACTS[getDayOfYear() % POSITIVE_FACTS.length]} />
+            {hasAllah && (
+              <View style={styles.allahCard}>
+                <View style={styles.allahIconWrap}><MosqueIcon size={28} /></View>
+                <Text style={styles.allahTitle}>DAILY REMINDER</Text>
+                <Text style={styles.allahText}>{ALLAH_REMINDERS[getDayOfYear() % ALLAH_REMINDERS.length]}</Text>
+              </View>
+            )}
+
+            <MotivationCard identity={identity} />
+          </View>
+        </View>
+
+        {/* ─── SOIL ────────────────────────────────────────────────────────
+            Rank as a cross-section below the surface: bedrock is Grounded,
+            and each rank you earn is a stratum closer to daylight. */}
+        <View style={styles.soilZone}>
+          <ZoneGradient
+            stops={[
+              ['0%', Earth.soilTop],
+              ['22%', Earth.soilUpper],
+              ['60%', Earth.soilMid],
+              ['100%', Earth.bedrock],
+            ]}
+          />
+          <View style={styles.soilEdge}>
+            <HillEdge height={26} topColor={Earth.soilSurface} highlight={Earth.grassDeep} />
+          </View>
+          <View style={[styles.zoneContent, styles.soilContent]}>
+            <PointsInfoCard
+              points={points}
+              streakDays={streakDays}
+              onPress={() => setShowRanks(true)}
+            />
+          </View>
+        </View>
+
+        <RanksModal
+          visible={showRanks}
+          onClose={() => setShowRanks(false)}
+          points={points}
+        />
       </ScrollView>
 
       {/* Leaderboard Modal */}
@@ -953,21 +1234,562 @@ export default function HomeTab({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.bg },
-  scroll: { padding: 20, paddingBottom: 100 },
+  safe: { flex: 1, backgroundColor: Earth.skyDeep },
+  scroll: { paddingBottom: 100 },
+
+  // ── zones ─────────────────────────────────────────────────────────────
+  zoneContent: {
+    paddingHorizontal: ZONE_PAD,
+  },
+  skyZone: {
+    paddingTop: 4,
+    paddingBottom: 30,
+  },
+  grassZone: {
+    paddingBottom: 26,
+  },
+  grassContent: {
+    paddingTop: 44,
+  },
+  hillEdge: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+  },
+  soilZone: {
+    paddingBottom: 34,
+  },
+  soilContent: {
+    paddingTop: 30,
+  },
+  soilEdge: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+  },
+
+  // ── sky header ────────────────────────────────────────────────────────
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 2,
+  },
+  // the sun sits centred behind the 40pt profile circle, so its rays start
+  // just outside the avatar instead of the two fighting for the corner
+  headerRight: {
+    width: SUN_SIZE,
+    height: SUN_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sunRays: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   dateText: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.textSecondary,
+    color: 'rgba(255,255,255,0.9)',
     textAlign: 'left',
-    marginBottom: 4,
   },
-  greeting: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#A8D8EA',
-    marginBottom: 20,
+  wordmarkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  wordmarkThin: {
+    fontSize: 30,
+    fontWeight: '400',
+    color: '#ffffff',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+    textShadowColor: 'rgba(13,43,58,0.32)',
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 9,
+  },
+  climbLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 2.4,
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.78)',
     textAlign: 'center',
+    marginTop: 2,
+    marginBottom: 20,
+  },
+
+  // ── cloud surfaces ────────────────────────────────────────────────────
+  // the three masses overlap, so the front ones cast onto the one behind
+  cloudCluster: {
+    height: CLUSTER_H,
+    marginTop: 4,
+  },
+  clusterPoints: {
+    position: 'absolute',
+    left: 0,
+    top: CLOUD_PROGRESS_H - CLUSTER_OVERLAP,
+  },
+  clusterStreak: {
+    position: 'absolute',
+    right: 0,
+    top: CLOUD_PROGRESS_H - CLUSTER_OVERLAP + 6,
+  },
+  cloudRowContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    // keep the content clear of the two front masses overlapping the base
+    bottom: CLUSTER_OVERLAP,
+  },
+  cloudRingWrap: {
+    width: RING_SIZE,
+    height: RING_SIZE,
+    flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cloudRingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cloudRingPercent: {
+    fontSize: 23,
+    fontWeight: '800',
+    color: Colors.textBright,
+  },
+  cloudRingGoal: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: '#8eaab8',
+    marginTop: -2,
+  },
+  cloudRingInfo: {
+    flex: 1,
+    marginLeft: 13,
+  },
+  cloudTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.textBright,
+  },
+  cloudSub: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    marginTop: 1,
+  },
+  cloudSubDone: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.green,
+    marginTop: 1,
+  },
+  milestoneBar: {
+    flexDirection: 'row',
+    gap: 4,
+    marginTop: 8,
+  },
+  milestoneSeg: {
+    flex: 1,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: Colors.border,
+    overflow: 'hidden',
+  },
+  milestoneSegFill: {
+    height: '100%',
+    borderRadius: 3,
+    backgroundColor: Colors.redDark,
+  },
+  cloudStatRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  },
+  cloudStatNum: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: Colors.textBright,
+  },
+  cloudStatNumStreak: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#5ba8c8',
+  },
+  cloudStatLabel: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+
+  // ── affirmation lettered into the sky ─────────────────────────────────
+  skyMantra: {
+    marginTop: 26,
+  },
+  skyEyebrow: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.8,
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.75)',
+  },
+  skyEditBtn: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.85)',
+  },
+  skyMantraCloud: {
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 22,
+  },
+  skyMantraPrompt: {
+    fontSize: 10.5,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+    color: '#14455d',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  // an open patch of sky you write into — your words cloud over it
+  skyField: {
+    minHeight: 112,
+    borderRadius: 18,
+    borderWidth: 1.6,
+    borderStyle: 'dashed',
+    borderColor: 'rgba(255,255,255,0.75)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  skyFieldMatch: {
+    borderStyle: 'solid',
+    borderColor: Colors.green,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+  },
+  skyFieldHint: {
+    fontSize: 10,
+    fontWeight: '500',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    color: '#14455d',
+  },
+  // the real input sits invisibly on top; the cloud masses are the feedback
+  skyFieldInput: {
+    ...StyleSheet.absoluteFillObject,
+    paddingHorizontal: 16,
+    color: 'transparent',
+    fontSize: 16,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+  },
+  skyMantraBtn: {
+    marginTop: 14,
+    marginHorizontal: 6,
+    borderRadius: 999,
+    paddingVertical: 15,
+    alignItems: 'center',
+    backgroundColor: '#5ba8c8',
+    shadowColor: 'rgba(13,43,58,1)',
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  skyMantraBtnDisabled: {
+    backgroundColor: '#c8e0ed',
+    shadowOpacity: 0.1,
+    elevation: 1,
+  },
+  skyMantraBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  skyMantraBtnTextDisabled: {
+    color: '#1a3a4a',
+  },
+  skyDoneBanner: {
+    flexDirection: 'row',
+    marginTop: 4,
+    borderRadius: 999,
+    paddingVertical: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(74,222,128,0.35)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.6)',
+  },
+  skyDoneText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0d2b1a',
+  },
+
+  // ── habit plots on the grass ──────────────────────────────────────────
+  plotBlock: {},
+  plotHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  plotHeaderText: {
+    flex: 1,
+  },
+  plotTitle: {
+    fontSize: 25,
+    fontWeight: '700',
+    color: Earth.dirtInk,
+    textShadowColor: 'rgba(255,255,255,0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 0,
+  },
+  plotSubtitle: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: Earth.dirtInkSoft,
+    marginTop: 4,
+    textShadowColor: 'rgba(255,255,255,0.26)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 0,
+  },
+  plotCount: {
+    fontSize: 25,
+    fontWeight: '700',
+    color: Earth.dirtInk,
+    textShadowColor: 'rgba(255,255,255,0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 0,
+  },
+  // a shallow dug-out scrape in the dirt: dark lip above, lit rim below
+  plotRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    marginBottom: 10,
+    backgroundColor: 'rgba(74,53,38,0.16)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.14)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.18)',
+  },
+  plotRowDone: {
+    backgroundColor: 'rgba(74,53,38,0.10)',
+  },
+  // a soil-rimmed seed well
+  plotCheck: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 2,
+    borderColor: Earth.dirtInk,
+    backgroundColor: 'rgba(74,53,38,0.14)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  plotCheckDone: {
+    backgroundColor: Earth.dirtInk,
+  },
+  plotCategoryIcon: {
+    marginLeft: 10,
+  },
+  plotInfo: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  plotHabitText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: Earth.dirtInkDeep,
+    textShadowColor: 'rgba(255,255,255,0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 0,
+  },
+  plotHabitTextDone: {
+    textDecorationLine: 'line-through',
+    color: Earth.dirtInk,
+  },
+  plotTimer: {
+    fontSize: 12,
+    color: Earth.dirtInkDeep,
+    marginTop: 3,
+  },
+  plotTimerPaused: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Earth.dirtInk,
+    marginTop: 3,
+  },
+  plotDoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    transform: [{ rotate: '-2.4deg' }],
+  },
+  plotDoneLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Earth.canopyDeep,
+  },
+  // a lopsided pill of packed earth
+  plotBtn: {
+    backgroundColor: Earth.dirtInk,
+    borderTopLeftRadius: 11,
+    borderTopRightRadius: 9,
+    borderBottomRightRadius: 12,
+    borderBottomLeftRadius: 8,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    minHeight: 44,
+    justifyContent: 'center',
+    transform: [{ rotate: '1.6deg' }],
+  },
+  plotBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Earth.dirtPill,
+  },
+  plotDelete: {
+    marginLeft: 8,
+    padding: 4,
+  },
+  plotEmpty: {
+    fontSize: 14,
+    color: Earth.dirtInkSoft,
+    paddingVertical: 16,
+  },
+  plotAddBtn: {
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 13,
+    borderBottomRightRadius: 17,
+    borderBottomLeftRadius: 12,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: 'rgba(74,53,38,0.6)',
+    backgroundColor: 'rgba(74,53,38,0.12)',
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  plotAddText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Earth.dirtInk,
+    textShadowColor: 'rgba(255,255,255,0.28)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 0,
+  },
+  plotLockedMsg: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+  },
+  plotLockedText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Earth.dirtInkSoft,
+    textShadowColor: 'rgba(255,255,255,0.24)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 0,
+  },
+
+  identityPlot: {
+    borderRadius: 14,
+    backgroundColor: 'rgba(74,53,38,0.16)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.14)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.18)',
+    padding: 16,
+    marginTop: 12,
+  },
+  identityPlotTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: Earth.dirtInk,
+    marginBottom: 6,
+  },
+  identityPlotText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: Earth.dirtInkDeep,
+  },
+
+  // ── rank strata in the soil ───────────────────────────────────────────
+  strataHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  strataCurrent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  strataCurrentInfo: {
+    marginLeft: 14,
+    flex: 1,
+  },
+  strataCurrentNext: {
+    marginTop: 8,
+  },
+  strataList: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.09)',
+  },
+  strataRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.25)',
+  },
+  strataRowFirst: {
+    borderTopLeftRadius: 14,
+    borderTopRightRadius: 14,
+  },
+  strataRowLast: {
+    borderBottomWidth: 0,
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14,
+  },
+  strataInfo: {
+    flex: 1,
+  },
+  strataPts: {
+    marginTop: 4,
+  },
+  strataRulesTitle: {
+    marginTop: 24,
+    marginBottom: 11,
+  },
+  strataRules: {
+    gap: 9,
+  },
+  strataRuleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  strataRuleBones: {
+    marginTop: -3,
   },
   grid: {
     gap: 16,
@@ -1791,8 +2613,9 @@ const styles = StyleSheet.create({
   // Mantra/Affirmation edit
   mantraHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    justifyContent: 'center',
+    alignItems: 'baseline',
+    gap: 12,
   },
   editMantraBtn: {
     color: Colors.redLight,
@@ -1942,10 +2765,10 @@ const styles = StyleSheet.create({
   },
   factsHeading: {
     fontSize: 20,
-    fontWeight: '700',
-    color: Colors.textBright,
-    marginTop: 8,
-    marginBottom: 4,
+    fontWeight: '800',
+    color: Earth.dirtInk,
+    marginTop: 20,
+    marginBottom: 10,
   },
   allahCard: {
     backgroundColor: Colors.bgCard,
@@ -1956,6 +2779,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: Colors.purple,
     alignItems: 'center',
+    marginTop: 12,
   },
   allahIconWrap: { marginBottom: 8 },
   allahTitle: {

@@ -6,9 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "splash": {
-      "backgroundColor": "#000000"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.unclouded.app"
@@ -18,6 +15,22 @@
         "backgroundColor": "#000000"
       },
       "package": "com.unclouded.app"
-    }
+    },
+    "plugins": [
+      "@react-native-community/datetimepicker",
+      "expo-status-bar",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#000000"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "69ed3ffc-a03c-4469-bfac-9a6872fd1923"
+      }
+    },
+    "owner": "asabry1"
   }
 }
