@@ -13,6 +13,7 @@
 
 import Anthropic from "npm:@anthropic-ai/sdk";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { isCrisis, CRISIS_REPLY } from "./crisis.ts";
 
 const anthropic = new Anthropic({ apiKey: Deno.env.get("ANTHROPIC_API_KEY")! });
 
@@ -55,28 +56,9 @@ than vaping, that help exists, and give them a crisis line for their region
 (988 in the US, 116 123 in the UK, 13 11 14 in Australia). Do not continue the
 cessation conversation until they are safe.`;
 
-// A model prompt is not a safety net on its own — this runs before the model
-// and short-circuits it entirely.
-const CRISIS_PATTERNS = [
-  /\bkill(ing)?\s+my ?self\b/i,
-  /\bsuicid(e|al)\b/i,
-  /\bend (it|my life)\b/i,
-  /\bwant to die\b/i,
-  /\bno reason to live\b/i,
-  /\bself[- ]?harm\b/i,
-  /\bhurt(ing)? myself\b/i,
-];
-
-const CRISIS_REPLY =
-  "I want to stop and say something directly: what you've written sounds bigger " +
-  "than quitting vaping, and I'm not the right help for it.\n\n" +
-  "Please talk to someone now — call or text 988 (US), 116 123 (UK Samaritans), " +
-  "or 13 11 14 (Australia). They are free, confidential, and open right now.\n\n" +
-  "If you're in immediate danger, call your local emergency number.";
-
-function isCrisis(text: string): boolean {
-  return CRISIS_PATTERNS.some((p) => p.test(text));
-}
+// The deterministic crisis short-circuit lives in crisis.ts so it can be
+// exercised on its own: node scripts/check-crisis-patterns.js
+// It runs before the model and replaces the reply entirely.
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
