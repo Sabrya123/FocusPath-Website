@@ -495,5 +495,15 @@ const letters = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end' },
   rowCenter: { justifyContent: 'center' },
   rowRight: { justifyContent: 'flex-end' },
-  word: { flexDirection: 'row', alignItems: 'flex-end' },
+  // Words wrap between themselves, but a single word longer than the line has
+  // nowhere to break — a habit named without spaces would otherwise run out of
+  // its row and under the Start button. Wrapping inside the word too costs
+  // nothing while it fits, and only breaks mid-word when it has to.
+  word: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'flex-end',
+    flexShrink: 1,
+    maxWidth: '100%',
+  },
 });
