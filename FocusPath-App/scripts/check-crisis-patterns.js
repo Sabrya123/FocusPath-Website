@@ -59,6 +59,10 @@ const CRISIS = [
   'I want to disappear forever',
   'I WANT TO KILL MYSELF', // case
   'i   want\nto   die', // whitespace and newlines
+
+  // An idiom in the same message must not suppress the crisis language after it.
+  'This craving is killing me, and I plan to overdose',
+  "I'm dying for a vape and I want to kill myself",
 ];
 
 // Must NOT short-circuit: the ordinary vocabulary of quitting.

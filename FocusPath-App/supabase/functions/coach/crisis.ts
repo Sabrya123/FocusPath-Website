@@ -11,21 +11,27 @@
 //
 // The exception is the handful of figures of speech that are genuinely common
 // in a quit-vaping app — "dying for a cigarette", "this craving is killing me".
-// Those are checked first and never count, because they would otherwise fire
-// constantly and train people to ignore the response.
+// Those are stripped out before the crisis patterns run, because they would
+// otherwise fire constantly and train people to ignore the response. Stripping
+// rather than short-circuiting is the point: "this craving is killing me, and I
+// plan to overdose" is still a crisis.
 //
 // Kept separate from index.ts so it can be exercised by
 // scripts/check-crisis-patterns.js without standing up the Edge Function.
 
-/** Idioms about craving, not about self-harm. Checked before anything else. */
+/**
+ * Idioms about craving, not about self-harm. Stripped from the text before the
+ * crisis patterns run. The /g flag is for replace-all: never use these with
+ * .test(), which is stateful on a global regex.
+ */
 const FIGURES_OF_SPEECH: RegExp[] = [
-  /\b(dying|die|dyin)\s+for\s+(a|an|one|some|another)\b/,
-  /\b(could|would|'?d)\s+kill\s+for\b/,
-  /\bkill(ing)?\s+for\s+(a|an|one|some|another)\b/,
-  /\b(is|are|was|were)\s+killing\s+me\b/,
-  /\bkill(ing)?\s+my\s?self\s+(with|by|over)\s+(a\s+|these\s+|the\s+)?(vape|vaping|smok|cigarette|nicotine|juul|pod)/,
-  /\bdead\s+(tired|serious|set|weight|end)\b/,
-  /\bdying\s+to\s+(know|hear|see|try|quit|stop)\b/,
+  /\b(dying|die|dyin)\s+for\s+(a|an|one|some|another)\b/g,
+  /\b(could|would|'?d)\s+kill\s+for\b/g,
+  /\bkill(ing)?\s+for\s+(a|an|one|some|another)\b/g,
+  /\b(is|are|was|were)\s+killing\s+me\b/g,
+  /\bkill(ing)?\s+my\s?self\s+(with|by|over)\s+(a\s+|these\s+|the\s+)?(vape|vaping|smok|cigarette|nicotine|juul|pod)/g,
+  /\bdead\s+(tired|serious|set|weight|end)\b/g,
+  /\bdying\s+to\s+(know|hear|see|try|quit|stop)\b/g,
 ];
 
 /**
@@ -85,8 +91,8 @@ export function normalize(text: string): string {
 export function isCrisis(text: string): boolean {
   const t = normalize(text);
   if (!t) return false;
-  if (FIGURES_OF_SPEECH.some((p) => p.test(t))) return false;
-  return CRISIS_PATTERNS.some((p) => p.test(t));
+  const withoutIdioms = FIGURES_OF_SPEECH.reduce((s, p) => s.replace(p, ' '), t);
+  return CRISIS_PATTERNS.some((p) => p.test(withoutIdioms));
 }
 
 export const CRISIS_REPLY =
