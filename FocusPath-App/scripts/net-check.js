@@ -41,8 +41,8 @@ function portFree(port) {
   });
 }
 
-// Reads files directly rather than shelling out to `npx expo whoami`,
-// which takes several seconds.
+// The login state costs a few seconds: a cached username outlives the session
+// it names, so it has to be checked against the CLI rather than just read.
 const { cliUsername, easProjectId, problems } = require('./expo-go-readiness');
 
 (async () => {
