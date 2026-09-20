@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { ActivityIndicator, View, Text, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
-import { getCurrentUser } from './src/utils/storage';
+import { UserProvider, useUser } from './src/context/UserContext';
 import { Colors } from './src/utils/colors';
 
 import { HomeIcon, TimelineIcon, EmergencyIcon, FriendsIcon, ProfileIcon } from './src/components/Icons';
@@ -74,26 +74,17 @@ function MainTabs() {
 }
 
 export default function App() {
-  const [initialRoute, setInitialRoute] = useState(null);
+  return (
+    <UserProvider>
+      <AppShell />
+    </UserProvider>
+  );
+}
 
-  useEffect(() => {
-    checkSession();
-  }, []);
+function AppShell() {
+  const { user, loading } = useUser();
 
-  async function checkSession() {
-    const user = await getCurrentUser();
-    if (!user) {
-      setInitialRoute('Login');
-    } else if (!user.identity) {
-      setInitialRoute('Identity');
-    } else if (!user.goodbyeLetter) {
-      setInitialRoute('GoodbyeLetter');
-    } else {
-      setInitialRoute('Dashboard');
-    }
-  }
-
-  if (!initialRoute) {
+  if (loading) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator size="large" color={Colors.red} />
@@ -101,6 +92,16 @@ export default function App() {
       </View>
     );
   }
+
+  // Read once, when the navigator first mounts. Later sign-in and sign-out
+  // move the user themselves rather than remounting the whole stack.
+  const initialRoute = !user
+    ? 'Login'
+    : !user.identity
+    ? 'Identity'
+    : !user.goodbyeLetter
+    ? 'GoodbyeLetter'
+    : 'Dashboard';
 
   return (
     <NavigationContainer

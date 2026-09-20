@@ -11,11 +11,13 @@ import {
   Alert,
 } from 'react-native';
 import { Colors } from '../utils/colors';
-import { getUsers, saveUsers, setSession } from '../utils/storage';
+import { getUsers, saveUsers } from '../utils/storage';
+import { useUser } from '../context/UserContext';
 import { supabase } from '../utils/supabase';
 import { EyeOpen, EyeClosed } from '../components/EyeIcon';
 
 export default function SignupScreen({ navigation }) {
+  const { signIn } = useUser();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -68,7 +70,7 @@ export default function SignupScreen({ navigation }) {
     // Save locally and continue
     users[trimmedEmail] = { name: trimmedName, email: trimmedEmail, password };
     await saveUsers(users);
-    await setSession(trimmedEmail);
+    await signIn(trimmedEmail);
     navigation.replace('Identity');
   }
 

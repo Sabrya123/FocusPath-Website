@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Colors } from '../utils/colors';
-import { getSession, getUsers, saveUsers } from '../utils/storage';
+import { useUser } from '../context/UserContext';
 import { SparkleIcon, CloseIcon } from '../components/Icons';
 
 // AI Identity Generator
@@ -285,11 +285,14 @@ const YEARS_OPTIONS = [
 ];
 
 export default function IdentityScreen({ navigation }) {
+  const { update } = useUser();
   const [identity, setIdentity] = useState('');
   const [identityValidation, setIdentityValidation] = useState(null);
   const [isValidating, setIsValidating] = useState(false);
   const [selectedMotivations, setSelectedMotivations] = useState([]);
   const [years, setYears] = useState('');
+  const [quitDate, setQuitDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [firstHabitCategory, setFirstHabitCategory] = useState('');
   const [firstHabitName, setFirstHabitName] = useState('');
   const [firstHabitTimer, setFirstHabitTimer] = useState('10');
@@ -421,21 +424,25 @@ export default function IdentityScreen({ navigation }) {
       done: false,
     };
 
-    const email = await getSession();
-    const users = await getUsers();
-    users[email] = {
-      ...users[email],
+    await update({
       identity: identity.trim(),
       mantra,
       motivations: selectedMotivations,
       vapingYears: years,
+      // Built from local parts, not toISOString: the picker hands back local
+      // midnight, and converting that to UTC moves the day for anyone east of
+      // UTC.
+      quitDate: [
+        quitDate.getFullYear(),
+        String(quitDate.getMonth() + 1).padStart(2, '0'),
+        String(quitDate.getDate()).padStart(2, '0'),
+      ].join('-'),
       habits: [firstHabit],
       habitsDate: new Date().toDateString(),
       journeyStartDate: new Date().toISOString(),
       streakDays: 0,
       points: 0,
-    };
-    await saveUsers(users);
+    });
     navigation.replace('GoodbyeLetter');
   }
 
@@ -623,6 +630,49 @@ export default function IdentityScreen({ navigation }) {
             </TouchableOpacity>
           ))}
         </View>
+
+        <Text style={styles.label}>
+          When did you quit (or when do you want to start)?
+        </Text>
+        <Text style={styles.hint}>
+          If you stopped before finding this app, pick that day — your streak
+          counts from then.
+        </Text>
+        {Platform.OS === 'ios' ? (
+          <DateTimePicker
+            value={quitDate}
+            mode="date"
+            display="spinner"
+            onChange={(event, date) => {
+              if (date) setQuitDate(date);
+            }}
+            style={styles.datePicker}
+            textColor={Colors.textBright}
+            themeVariant="light"
+          />
+        ) : (
+          <>
+            <TouchableOpacity
+              style={styles.dateBtn}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Text style={styles.dateBtnText}>
+                {quitDate.toLocaleDateString()}
+              </Text>
+            </TouchableOpacity>
+            {showDatePicker && (
+              <DateTimePicker
+                value={quitDate}
+                mode="date"
+                display="default"
+                onChange={(event, date) => {
+                  setShowDatePicker(false);
+                  if (date) setQuitDate(date);
+                }}
+              />
+            )}
+          </>
+        )}
 
         <Text style={styles.label}>Choose your first daily habit</Text>
         <Text style={styles.hint}>

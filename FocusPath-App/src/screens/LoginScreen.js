@@ -11,10 +11,12 @@ import {
   Alert,
 } from 'react-native';
 import { Colors } from '../utils/colors';
-import { getUsers, saveUsers, setSession, clearAllData } from '../utils/storage';
+import { getUsers, clearAllData } from '../utils/storage';
+import { useUser } from '../context/UserContext';
 import { supabase } from '../utils/supabase';
 
 export default function LoginScreen({ navigation }) {
+  const { signIn } = useUser();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -41,8 +43,7 @@ export default function LoginScreen({ navigation }) {
       password: password,
     }).catch(() => {});
 
-    await setSession(trimmedEmail);
-    const user = users[trimmedEmail];
+    const user = await signIn(trimmedEmail);
 
     if (!user.identity) {
       navigation.replace('Identity');

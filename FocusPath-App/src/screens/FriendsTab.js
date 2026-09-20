@@ -15,7 +15,7 @@ import * as Clipboard from 'expo-clipboard';
 import { Colors } from '../utils/colors';
 import { supabase } from '../utils/supabase';
 import { FireIcon, CheckIcon, CloseIcon } from '../components/Icons';
-import { getCurrentUser } from '../utils/storage';
+import { useUser } from '../context/UserContext';
 import {
   ensureFriendCode,
   addFriendByCode,
@@ -46,6 +46,9 @@ function getRankName(points) {
 }
 
 export default function FriendsTab() {
+  // refresh() rather than the context's `user`: these helpers run from a
+  // useFocusEffect with empty deps, so a captured value would go stale.
+  const { refresh } = useUser();
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [myCode, setMyCode] = useState('');
@@ -71,7 +74,7 @@ export default function FriendsTab() {
     if (user) return user;
 
     // Not signed in — try to create/sign in using local credentials
-    const localUser = await getCurrentUser();
+    const localUser = await refresh();
     if (!localUser?.email || !localUser?.password) return null;
 
     // Try sign in first
@@ -109,7 +112,7 @@ export default function FriendsTab() {
       setUserId(user.id);
 
       // Sync local profile data
-      const localUser = await getCurrentUser();
+      const localUser = await refresh();
       if (localUser) syncProfileToSupabase(user.id, localUser);
 
       const code = await ensureFriendCode(user.id);

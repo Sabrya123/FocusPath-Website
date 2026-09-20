@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,9 +10,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Circle, Ellipse, G, Defs, ClipPath, LinearGradient, RadialGradient, Stop } from 'react-native-svg';
-import { useFocusEffect } from '@react-navigation/native';
 import { Colors } from '../utils/colors';
-import { getCurrentUser } from '../utils/storage';
+import { useUser } from '../context/UserContext';
 import * as Haptics from 'expo-haptics';
 
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -27,7 +26,7 @@ export default function EmergencyTab() {
   const [phase, setPhase] = useState('closed');
   const [breathingText, setBreathingText] = useState('');
   const [timeLeft, setTimeLeft] = useState(TOTAL_SECONDS);
-  const [user, setUser] = useState(null);
+  const { user } = useUser();
 
   const pressAnim = useRef(new Animated.Value(0)).current;
   const haloAnim = useRef(new Animated.Value(0)).current;
@@ -40,8 +39,6 @@ export default function EmergencyTab() {
   const breathingRef = useRef(null);
   const countdownRef = useRef(null);
 
-  useFocusEffect(useCallback(() => { loadUser(); }, []));
-  async function loadUser() { setUser(await getCurrentUser()); }
   useEffect(() => () => stopBreathing(), []);
 
   // Slow halo breath while the button is waiting to be pressed. Runs on the

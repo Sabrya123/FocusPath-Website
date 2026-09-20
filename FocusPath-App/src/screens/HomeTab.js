@@ -14,7 +14,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Svg, { Circle, Rect, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Colors } from '../utils/colors';
-import { getCurrentUser, getSession, updateUser, getUsers, getDayOfYear } from '../utils/storage';
+import { getUsers, getDayOfYear } from '../utils/storage';
+import { useUser } from '../context/UserContext';
 import { StarIcon, CheckIcon, CategoryIcon, CloseIcon, DeleteIcon, MedalIcon, StrengthIcon, SparkleIcon, XIcon, FireIcon, MosqueIcon } from '../components/Icons';
 import { NEGATIVE_FACTS, POSITIVE_FACTS, ALLAH_REMINDERS } from '../data/facts';
 import FactCard from '../components/FactCard';
@@ -543,6 +544,7 @@ function MotivationCard({ identity }) {
 }
 
 export default function HomeTab({ navigation }) {
+  const { refresh, update } = useUser();
   const [streakDays, setStreakDays] = useState(0);
   const [points, setPoints] = useState(0);
   const [habits, setHabits] = useState([]);
@@ -551,7 +553,6 @@ export default function HomeTab({ navigation }) {
   const [mantra, setMantra] = useState('');
   const [mantraInput, setMantraInput] = useState('');
   const [mantraDone, setMantraDone] = useState(false);
-  const [email, setEmail] = useState('');
   const [showRanks, setShowRanks] = useState(false);
   const [journeyMonth, setJourneyMonth] = useState(1);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
@@ -566,11 +567,11 @@ export default function HomeTab({ navigation }) {
   );
 
   async function loadData() {
-    const sessionEmail = await getSession();
-    const user = await getCurrentUser();
+    // Pull from storage rather than reading context state: this runs on focus
+    // and the day-rollover below needs the record as it is right now.
+    const user = await refresh();
     if (!user) return;
 
-    setEmail(sessionEmail);
     setIdentity(user.identity || '');
     setMantra(user.mantra || '');
     setPoints(user.points || 0);
@@ -646,7 +647,7 @@ export default function HomeTab({ navigation }) {
       setStreakDays(newStreak);
       setPoints(newPoints);
 
-      await updateUser(sessionEmail, {
+      await update({
         habits: resetHabits,
         habitsDate: today,
         todayCompleted: false,
@@ -694,7 +695,7 @@ export default function HomeTab({ navigation }) {
       setAllDone(true);
     }
 
-    await updateUser(email, {
+    await update({
       habits: updated,
       habitsDate: today,
       todayCompleted: nowComplete,
@@ -730,7 +731,7 @@ export default function HomeTab({ navigation }) {
     setStreakDays(displayStreak);
     setPoints(displayPoints);
 
-    await updateUser(email, {
+    await update({
       mantraDoneToday: true,
       habitsDate: today,
       todayCompleted: nowComplete,
@@ -744,7 +745,7 @@ export default function HomeTab({ navigation }) {
   async function handleEditMantra(newMantra) {
     setMantra(newMantra);
     setMantraInput('');
-    await updateUser(email, { mantra: newMantra });
+    await update({ mantra: newMantra });
   }
 
   function addHabit(newHabit) {
@@ -775,7 +776,9 @@ export default function HomeTab({ navigation }) {
         };
         setHabits(updated);
         const today = new Date().toDateString();
-        updateUser(email, { habits: updated, habitsDate: today });
+        // Not awaited — this runs from a navigation callback. The provider
+        // serializes it against the completion write below.
+        update({ habits: updated, habitsDate: today });
       },
       onComplete: ({ extraPoints }) => {
         const updated = [...habits];
@@ -805,7 +808,8 @@ export default function HomeTab({ navigation }) {
         setHabits(updated);
 
         const today = new Date().toDateString();
-        updateUser(email, {
+        // Not awaited — see onPause above.
+        update({
           habits: updated,
           habitsDate: today,
           todayCompleted: allCompleted,

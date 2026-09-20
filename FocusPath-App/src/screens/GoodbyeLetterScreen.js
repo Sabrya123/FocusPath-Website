@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Colors } from '../utils/colors';
-import { getSession, getUsers, saveUsers } from '../utils/storage';
+import { useUser } from '../context/UserContext';
 
 const PROMPTS = [
   "What you took from me...",
@@ -82,6 +82,7 @@ function validateLetter(text) {
 }
 
 export default function GoodbyeLetterScreen({ navigation }) {
+  const { update } = useUser();
   const [letter, setLetter] = useState('');
   const [validation, setValidation] = useState(null);
   const [isValidating, setIsValidating] = useState(false);
@@ -131,14 +132,10 @@ export default function GoodbyeLetterScreen({ navigation }) {
 
     setIsSaving(true);
     try {
-      const email = await getSession();
-      const users = await getUsers();
-      users[email] = {
-        ...users[email],
+      await update({
         goodbyeLetter: letter.trim(),
         goodbyeLetterDate: new Date().toISOString(),
-      };
-      await saveUsers(users);
+      });
       navigation.replace('Dashboard');
     } catch (e) {
       setIsSaving(false);

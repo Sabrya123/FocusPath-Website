@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -6,29 +6,20 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors } from '../utils/colors';
-import { getCurrentUser, getStreakInfo } from '../utils/storage';
+import { useUser, useStreak } from '../context/UserContext';
 import TimelineList from '../components/TimelineList';
 
 export default function TimelineTab() {
-  const [days, setDays] = useState(0);
-  const [vapingYears, setVapingYears] = useState('<1');
+  const { user, refresh } = useUser();
+  const streak = useStreak();
 
+  // The day count is measured against the clock, so returning to this screen
+  // has to recompute it rather than reuse what was rendered before.
   useFocusEffect(
     useCallback(() => {
-      loadData();
-    }, [])
+      refresh();
+    }, [refresh])
   );
-
-  async function loadData() {
-    const user = await getCurrentUser();
-    if (user?.quitDate) {
-      const streak = getStreakInfo(user.quitDate);
-      setDays(streak.days);
-    }
-    if (user?.vapingYears) {
-      setVapingYears(user.vapingYears);
-    }
-  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -36,7 +27,10 @@ export default function TimelineTab() {
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-        <TimelineList currentDays={days} vapingYears={vapingYears} />
+        <TimelineList
+          currentDays={streak?.days || 0}
+          vapingYears={user?.vapingYears || '<1'}
+        />
       </ScrollView>
     </SafeAreaView>
   );

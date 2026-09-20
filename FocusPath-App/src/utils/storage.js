@@ -29,23 +29,6 @@ export async function clearAllData() {
   await AsyncStorage.removeItem(SESSION_KEY);
 }
 
-export async function getCurrentUser() {
-  const email = await getSession();
-  if (!email) return null;
-  const users = await getUsers();
-  return users[email] || null;
-}
-
-export async function updateUser(email, updates) {
-  const users = await getUsers();
-  if (users[email]) {
-    users[email] = { ...users[email], ...updates };
-    await saveUsers(users);
-    return users[email];
-  }
-  return null;
-}
-
 export function getDayOfYear() {
   const now = new Date();
   const start = new Date(now.getFullYear(), 0, 0);
@@ -53,8 +36,20 @@ export function getDayOfYear() {
   return Math.floor(diff / (1000 * 60 * 60 * 24));
 }
 
+// Reads "YYYY-MM-DD" as local midnight. new Date("2026-09-19") parses as UTC
+// midnight, which puts everyone west of UTC a day ahead of their real streak —
+// quitting today would read as day one. Anything else falls through to the
+// built-in parser.
+function parseQuitDate(quitDateStr) {
+  const parts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(quitDateStr || '');
+  if (parts) {
+    return new Date(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]));
+  }
+  return new Date(quitDateStr);
+}
+
 export function getStreakInfo(quitDateStr) {
-  const quitDate = new Date(quitDateStr);
+  const quitDate = parseQuitDate(quitDateStr);
   const now = new Date();
   const diffMs = now - quitDate;
   const hours = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60)));

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,26 +10,20 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Colors } from '../utils/colors';
-import { getCurrentUser, clearSession, getStreakInfo } from '../utils/storage';
+import { useUser, useStreak } from '../context/UserContext';
 
 export default function ProfileTab() {
-  const [user, setUser] = useState(null);
-  const [streak, setStreak] = useState(null);
+  const { user, refresh, signOut } = useUser();
+  const streak = useStreak();
   const navigation = useNavigation();
 
+  // The streak is measured against the clock, so returning to this screen has
+  // to recompute it rather than reuse what was rendered before.
   useFocusEffect(
     useCallback(() => {
-      loadUser();
-    }, [])
+      refresh();
+    }, [refresh])
   );
-
-  async function loadUser() {
-    const u = await getCurrentUser();
-    setUser(u);
-    if (u?.quitDate) {
-      setStreak(getStreakInfo(u.quitDate));
-    }
-  }
 
   async function handleLogout() {
     Alert.alert('Log Out', 'Are you sure you want to log out?', [
@@ -38,7 +32,7 @@ export default function ProfileTab() {
         text: 'Log Out',
         style: 'destructive',
         onPress: async () => {
-          await clearSession();
+          await signOut();
           navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
         },
       },
