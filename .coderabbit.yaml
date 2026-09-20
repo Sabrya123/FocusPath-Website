@@ -1,0 +1,15 @@
+# Keep CodeRabbit's findings, drop its ceremony.
+#
+# Every comment CodeRabbit posts is a GitHub notification email, and on PR #2
+# sixteen of them carried one actionable finding. The keys below switch off the
+# per-review comments that restate the diff; the inline findings, which are the
+# part worth reading, are untouched.
+#
+# The review profile stays "chill" on purpose. "quiet" would cut real findings
+# too, and chill is what caught the crisis-detection bug in coach/crisis.ts.
+reviews:
+  high_level_summary: false
+  changed_files_summary: false
+  sequence_diagrams: false
+  review_status: false
+  poem: false
