@@ -43,13 +43,21 @@ export default function LoginScreen({ navigation }) {
       .signInWithPassword({ email: trimmedEmail, password })
       .catch((e) => ({ error: e }));
 
-    if (sbError) {
+    if (sbError && sbError.code !== 'invalid_credentials') {
+      // Anything other than invalid_credentials means the account is not the
+      // problem: an unconfirmed email, a paused project, a dropped connection.
+      // Creating an account cannot fix any of those, and trying would fire a
+      // pointless sign-up and leave the user locally logged in with no session.
+      console.warn(
+        `[supabase] no session for ${trimmedEmail} — ${sbError.code ?? 'error'}: ${sbError.message}`
+      );
+    } else if (sbError) {
       // Accounts made before Supabase auth was wired in — or whose signUp
       // silently failed — exist locally but not in Supabase, so sign-in returns
       // invalid_credentials. The local password was already verified above, so
       // create the Supabase account now. Without a session, friends, chat and
       // the AI coach all 401.
-      const { error: signUpErr } = await supabase.auth
+      const { data: created, error: signUpErr } = await supabase.auth
         .signUp({ email: trimmedEmail, password })
         .catch((e) => ({ error: e }));
 
@@ -64,6 +72,15 @@ export default function LoginScreen({ navigation }) {
             ? `[supabase] ${trimmedEmail} exists in Supabase with a different password. ` +
               'Reset it in Dashboard > Authentication > Users so it matches the app password.'
             : `[supabase] no session — sign-in: ${sbError.message} | sign-up: ${signUpErr.message}`
+        );
+      } else if (!created?.session) {
+        // Signed up without erroring, but got no session: either the email
+        // needs confirming, or an account already exists and came back as an
+        // obfuscated user. Both leave the app running without a session, which
+        // used to pass silently.
+        console.warn(
+          `[supabase] ${trimmedEmail} signed up without a session. Either the email ` +
+            'needs confirming, or the account already exists with a different password.'
         );
       }
     }

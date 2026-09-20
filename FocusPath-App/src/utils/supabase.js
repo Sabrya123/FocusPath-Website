@@ -50,18 +50,38 @@ export async function ensureSupabaseSession() {
     options: { data: { name: local.name } },
   });
   if (created?.session) {
-    await supabase.from('profiles').upsert({
+    // The session is what this function promises, so a failed profile write
+    // does not fail the call — friends and the leaderboard would degrade, but
+    // the coach would break for an unrelated reason. syncProfileToSupabase
+    // retries the same upsert later. It must not pass silently, though: an RLS
+    // rejection here is why a new account shows up nameless to its friends.
+    const { error: profileError } = await supabase.from('profiles').upsert({
       id: created.user.id,
       name: local.name || '',
       email: local.email,
     });
+    if (profileError) {
+      console.warn(
+        `[supabase] signed in, but the profile row for ${local.email} did not save: ` +
+          `${profileError.message}. Friends and the leaderboard will not see this user ` +
+          'until it syncs.'
+      );
+    }
     return { user: created.user };
   }
   if (signUpError?.code === 'user_already_exists') {
     return { error: "Couldn't sign in: the password saved on this phone doesn't match your online account." };
   }
-  if (created?.user) {
-    return { error: "Couldn't sign in: your email address hasn't been confirmed." };
+  // No session and no error. That is either an unconfirmed email, or — when the
+  // project has both email and phone confirmation on — an existing confirmed
+  // account returned as an obfuscated user. The response cannot tell those
+  // apart without leaning on undocumented fields, so say what covers both.
+  if (!signUpError) {
+    return {
+      error:
+        "Couldn't sign in. Check your email for a confirmation link — or, if you " +
+        'already have an account, reset its password so it matches this phone.',
+    };
   }
-  return { error: `Couldn't sign in: ${signUpError?.message ?? 'unknown error'}` };
+  return { error: `Couldn't sign in: ${signUpError.message ?? 'unknown error'}` };
 }
