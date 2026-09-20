@@ -3,5 +3,19 @@
     "allow": [
       "Bash(npx get-shit-done-cc@latest:*)"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"console.log(JSON.stringify({hookSpecificOutput:{hookEventName:'SessionStart',additionalContext:'Reminder: open a terminal tab in this session working directory now, before starting other work, using the terminal open_terminal_tab tool.'}}))\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
   }
 }

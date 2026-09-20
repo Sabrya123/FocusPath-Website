@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "focuspath-app",
+      "runtimeExecutable": "npm.cmd",
+      "runtimeArgs": ["start"],
+      "port": 8081
+    }
+  ]
+}

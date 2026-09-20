@@ -14,6 +14,9 @@ import { Colors } from '../utils/colors';
 import { getSession, getCurrentUser, updateUser } from '../utils/storage';
 import ProfileButton from '../components/ProfileButton';
 
+// Points for each healthy swap finished. Each one can only earn once a day.
+export const DOPAMINE_POINTS = 10;
+
 // Healthy swaps for the hit a craving is asking for. Kept free of made-up
 // numbers, same rule as the AI coach.
 const OPTIONS = [
@@ -104,10 +107,21 @@ export default function DopamineTab() {
   async function markDone(id) {
     if (doneIds.includes(id)) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    const ids = [...doneIds, id];
-    setDoneIds(ids);
+    setDoneIds((current) => (current.includes(id) ? current : [...current, id]));
+
     const email = await getSession();
-    if (email) await updateUser(email, { dopamineDone: { date: new Date().toDateString(), ids } });
+    const user = await getCurrentUser();
+    if (!email || !user) return;
+
+    // Re-check against what's saved so a quick double tap can't pay out twice.
+    const today = new Date().toDateString();
+    const saved = user.dopamineDone?.date === today ? user.dopamineDone.ids : [];
+    if (saved.includes(id)) return;
+
+    await updateUser(email, {
+      dopamineDone: { date: today, ids: [...saved, id] },
+      points: (user.points || 0) + DOPAMINE_POINTS,
+    });
   }
 
   return (
@@ -128,7 +142,7 @@ export default function DopamineTab() {
           </Text>
           {doneIds.length > 0 && (
             <Text style={styles.introCount}>
-              {doneIds.length} done today
+              {doneIds.length} done today · +{doneIds.length * DOPAMINE_POINTS} pts
             </Text>
           )}
         </View>
@@ -173,7 +187,7 @@ export default function DopamineTab() {
                     disabled={done}
                   >
                     <Text style={[styles.doneBtnText, done && styles.doneBtnTextDone]}>
-                      {done ? 'Done today ✓' : 'I did it'}
+                      {done ? 'Done today ✓' : `I did it · +${DOPAMINE_POINTS} pts`}
                     </Text>
                   </TouchableOpacity>
                 </View>
